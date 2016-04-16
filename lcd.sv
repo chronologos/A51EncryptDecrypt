@@ -1,22 +1,23 @@
-module lcd(clock,_lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
-	input clock;
-	output _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon;
-	output [7:0] _lcd_data;
+// TESTING CODE
+// module lcd2(clock,_lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
+// 	input clock;
+// 	output _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon;
+// 	output [7:0] _lcd_data;
+//
+// 	wire lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
+// 	wire [7:0] lcd_data;
+//
+// 	lcd2 mylcd2(clock, 1'b0, 1'b1, 8'd97, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+// 	assign _lcd_rw = lcd_rw;
+// 	assign _lcd_en = lcd_en;
+// 	assign _lcd_rs = lcd_rs;
+// 	assign _lcd_on = lcd_on;
+// 	assign _lcd_blon = lcd_blon;
+// 	assign _lcd_data = lcd_data;
+//
+// endmodule
 
-	wire lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
-	wire [7:0] lcd_data;
-
-	lcd2 mylcd2(clock, 1'b0, 1'b1, 8'd97, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
-	assign _lcd_rw = lcd_rw;
-	assign _lcd_en = lcd_en;
-	assign _lcd_rs = lcd_rs;
-	assign _lcd_on = lcd_on;
-	assign _lcd_blon = lcd_blon;
-	assign _lcd_data = lcd_data;
-
-endmodule
-
-module lcd2(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
+module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
 
 	input clock, reset, write_en;
 	input [7:0] data;

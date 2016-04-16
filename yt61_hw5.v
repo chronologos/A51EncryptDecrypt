@@ -6,8 +6,8 @@ module yt61_hw5(	inclock, resetn, ps2_clock, ps2_data, debug_word, debug_addr, /
 	input ps2_data, ps2_clock;
 
 	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
-	output [7:0] leds, lcd_data;
-	output [6:0] seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8;
+	output [7:0] lcd_data;
+	// output [6:0] seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8;
 	output [31:0] debug_word;
 	output [11:0] debug_addr;
 

@@ -1,17 +1,34 @@
-E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\up_countertb.v}
+E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module datastore_regtb
+
+Top level modules:
+	datastore_regtb
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\up_countertb.v}
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module up_countertb
 
 Top level modules:
 	up_countertb
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display_input.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display_input.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module lcd_display_input
--- Compiling module yt61_reg
+-- Compiling module a51
+-- Compiling module LFSR
+-- Compiling module my_tri
+-- Compiling module majority3
 
 Top level modules:
-	lcd_display_input
+	a51
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module datastore_reg
+-- Compiling module my_decoder
+
+Top level modules:
+	datastore_reg
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
@@ -20,25 +37,11 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	a51_tb
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_counter.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/up_counter.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_counter.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\up_counter.v}
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module up_counter
 
 Top level modules:
 	up_counter
-
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display_input_tb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display_input_tb.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module lcd_display_input_tb
-
-Top level modules:
-	lcd_display_input_tb
-
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/lcd_display.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module lcd_display
-
-Top level modules:
-	lcd_display
 
 } {} {}}
