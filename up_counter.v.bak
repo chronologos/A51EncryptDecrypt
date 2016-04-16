@@ -1,0 +1,22 @@
+module counterwrapper(stageone,stagetwo,stagethree,clk);
+  wire[3:0] UC_out;
+  up_counter UC(clk,1'b0,UC_out);
+  wire stageone = &(UC_out~^4'b0100);
+  wire stagetwo = &(UC_out~^4'b1100);
+  wire stagethree = &(UC_out~^4'b1110);
+endmodule
+
+module up_counter (C, CLR, Q);
+input C, CLR;
+output [3:0] Q;
+reg [3:0] tmp;
+
+  always @(posedge C or posedge CLR)
+    begin
+      if (CLR)
+        tmp = 4'b0000;
+      else
+        tmp = tmp + 1'b1;
+      end
+  assign Q = tmp;
+endmodule

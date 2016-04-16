@@ -1,0 +1,18 @@
+module LFSR(clk,in,out,write_enable,clrn,prn);
+  parameter DATA_WIDTH = 32;
+  input clk, in, write_enable;
+  input [DATA_WIDTH-1:0] clrn, prn;
+  output [DATA_WIDTH-1:0] out;
+
+  // ⇒ 5 ⇒ 4 ⇒ 3 ⇒ 2 ⇒ 1 ⇒ 0 ⇒ , so 6 nodes need 7 wires.
+  wire n_to_nminus1 [DATA_WIDTH : 0];
+
+  genvar c;
+	generate
+		for (c = DATA_WIDTH-1; c>=0; c = c - 1) begin: loopDFFs
+
+			DFFE my_dff(.d(n_to_nminus1[c+1]),.clrn(clrn[c]),.prn(prn[c]),.clk(clk),.q(n_to_nminus1[c]),.ena(write_enable));
+		end
+	endgenerate
+  assign output = n_to_nminus1[DATA_WIDTH-1:0];
+endmodule
