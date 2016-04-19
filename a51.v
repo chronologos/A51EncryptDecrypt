@@ -27,15 +27,16 @@ module inputToA51(clk,reset,keyindex,dataindex,key,data,enterToKeyNotData, start
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
 
-	a51 mya51(clk,reset, loadin, startKeyStreamGen, a51out,r19out,r22out,r23out, testout)
+	a51 mya51(clk,reset, loadin, startKeyStreamGen, KeyStreamReady, a51out,r19out,r22out,r23out, testout)
 
 endmodule
 
 // This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
-module a51(clk,reset, loadin, startKeyStreamGen, a51out,r19out,r22out,r23out, testout); // T
+module a51(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, a51out, r19out, r22out, r23out, testout); // T
 	input reset;
 	input clk; // T
 	input startKeyStreamGen;
+	output KeyStreamReady;
 	output a51out; // final output bit by bit of the A5/1
 	output[18:0] r19out; // outputs of each LFSR in A5/1
 	output [21:0] r22out;
