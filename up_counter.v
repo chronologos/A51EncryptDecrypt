@@ -1,13 +1,13 @@
-module up_counter (C, CLR, Q, STAGEONE, STAGETWO, STAGETHREE, OUTPUTSTAGE);
-input C, CLR;
+module up_counter (C, CLR, Q, ENABLE, STAGEONE, STAGETWO, STAGETHREE, OUTPUTSTAGE);
+input C, CLR, ENABLE;
 output [9:0] Q;
 output reg STAGEONE, STAGETWO, STAGETHREE,OUTPUTSTAGE;
 reg [9:0] tmp;
 
   always @(posedge C) begin
-      if (CLR) begin
+      if (CLR & ENABLE) begin
         tmp = 10'd0;
-      end else begin
+      end else if (ENABLE) begin
 			  tmp = tmp + 10'd1;
 			  if (tmp <= 10'd64) begin
 					STAGEONE = 1;

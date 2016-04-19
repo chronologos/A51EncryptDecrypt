@@ -289,16 +289,18 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	yt61_hw4 myMultDiv(.data_operandA(mainALU_operandA_in), .data_operandB(mainALU_operandB_in), .ctrl_MULT(ctrlMult), .ctrl_DIV(ctrlDiv), .clock(clock), .data_result(multdiv_out), .data_exception(multdiv_exception), .data_inputRDY(multdiv_inputrdy), .data_resultRDY(multdiv_resultrdy));
 	yt61_reg multdiv_INSTR_STORE(.reg_d(DX_IR_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_IR_out),.write_enable(ctrlMult|ctrl_DIV),.clk(clock));
 	yt61_reg multdiv_RESULT_STORE(.reg_d(multdiv_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_RESULT_STORE_out),.write_enable(multdiv_resultrdy),.clk(clock));
-
-
+	wire multdiv_active;
+	DFFE multdivactive (.d(stall2), .clk(clock), .clrn(~reset), .prn(1'b1), .ena(stall2|multdiv_resultrdy), .q(multdiv_active));
 
 	//-------
 	// HAZARD detection
 	//-------
 	wire rs2matters = (&(FD_IR_out[31:27] ^~ 5'b00000)) & ~(&(FD_IR_out[31:28] ^~ 4'b0010));
 	wire stall1 = &(DX_IR_out[31:27] ^~ 5'b01000) & ((&(FD_IR_out[21:17] ^~ DX_IR_out[26:22])) | ((&(FD_IR_out[16:12] ^~ DX_IR_out[26:22])) & rs2matters));
-	wire stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
-	assign stall = stall1 | stall2;
+	wire stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to
+	operate.
+	wire stall3= multdiv_active & ~multdiv_resultrdy;
+	assign stall = stall1 | stall2 | stall3;
 
 	//where RS2matters means the insn is R type and not shift
 	//stall when DX is load & ((FD.RS1 == DX.RD) || ((FD.RS2 == DX.RD) & RS2matters))

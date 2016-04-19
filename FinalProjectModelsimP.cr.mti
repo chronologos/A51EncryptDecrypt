@@ -12,6 +12,13 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	up_countertb
 
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module keyframe_regtb
+
+Top level modules:
+	keyframe_regtb
+
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module a51
@@ -43,5 +50,12 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 
 Top level modules:
 	up_counter
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module keyframe_reg
+
+Top level modules:
+	keyframe_reg
 
 } {} {}}

@@ -1,8 +1,41 @@
-// module a51(clk,loadin,a51out,r19out,r22out,r23out, testout);
-	// input clk, loadin;
-module a51(clk,reset,a51out,r19out,r22out,r23out, testout); // T
+module inputToA51(clk,reset,keyindex,dataindex,key,data,enterToKeyNotData, startKeyStreamGen);
+	input startKeyStreamGen; // Flip Switch
+	input enterToKeyNotData; // Another flip switch
+	input [2:0] keyindex;
+	input [4:0] dataindex;
+	input [7:0] key, data; //eventually from PS2 TODO, can simulate using modelsim for nnow
+	input clk, reset;
+
+	// Instantiate special register stores for key+frame (86 bits) and message (224 bits). These registers are special as
+	// They allow the writing of 8 bits at a time into different indices. They are controlled by a counter which increments
+	// Its count every time there is a new keypress.
+	// key + frame eventually piped into a LFSR, where it is then piped into a51 unit
+	wire [63:0] keyframe_out;
+	wire [223:0] datastore_out;
+	keyframe_reg key(.ps2data_in(key), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData), .clk(clk), .reset(reset));
+	datastore_reg data(.ps2data_in(data), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData), .clk(clk), .reset(reset));
+
+	// instantiate keyframeLFSR, this will take input from our keyframe_reg
+	wire[85:0] keyframeLFSR_out, keyframeLFSR_prn, keyframeLFSR_clrn;
+	wire firstCycle = &(counter_out~^10'b0000000000);
+	my_tri #(86) keyframeLFSRprntri(.in({keyframe_out,22'h000134}),.enable(firstCycle),.out(keyframeLFSR_prn));
+	my_tri #(86) keyframeLFSRprntri2(.in({86{1'b0}}),.enable(~firstCycle),.out(keyframeLFSR_prn));
+	my_tri #(86) keyframeLFSRclrntri(.in({keyframe_out,22'h000134}),.enable(firstCycle),.out(keyframeLFSR_clrn));
+	my_tri #(86) keyframeLFSRclrntri2(.in({86{1'b1}}),.enable(~firstCycle),.out(keyframeLFSR_clrn));
+	assign testout = keyframeLFSR_out;
+	wire keyframeLFSR_in;
+	assign keyframeLFSR_in = 1'bz;
+	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
+
+	a51 mya51(clk,reset, loadin, startKeyStreamGen, a51out,r19out,r22out,r23out, testout)
+
+endmodule
+
+// This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
+module a51(clk,reset, loadin, startKeyStreamGen, a51out,r19out,r22out,r23out, testout); // T
 	input reset;
 	input clk; // T
+	input startKeyStreamGen;
 	output a51out; // final output bit by bit of the A5/1
 	output[18:0] r19out; // outputs of each LFSR in A5/1
 	output [21:0] r22out;
@@ -10,25 +43,18 @@ module a51(clk,reset,a51out,r19out,r22out,r23out, testout); // T
 	output [85:0] testout; // allow us to view our input key and frame bits
 	wire loadin; // T
 
+	//INPUT to keyframe and datastore registers
+
+
+
 	// instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
 	// we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
 	// 100 cycle irregular clocking and 224 cycles of valid output. these lines will be asserted
 	// whenever the respective stage is true
 	wire stageone,stagetwo,stagethree,outputstage;
 	wire [9:0] counter_out;
-	up_counter myCounter(.C(clk), .CLR(reset), .Q(counter_out), .STAGEONE(stageone), .STAGETWO(stagetwo), .STAGETHREE(stagethree),.OUTPUTSTAGE(outputstage));
-	// instantiate testing lfsr
-	wire[85:0] LFSRtest_out, LFSRtest_prn, LFSRtest_clrn;
-	wire firstCycle = &(counter_out~^10'b0000000000);
-	my_tri #(86) LFSRtestprntri(.in({64'h1223456789ABCDEF,22'h000134}),.enable(firstCycle),.out(LFSRtest_prn));
-	my_tri #(86) LFSRtestprntri2(.in({86{1'b0}}),.enable(~firstCycle),.out(LFSRtest_prn));
-	my_tri #(86) LFSRtestclrntri(.in({64'h1223456789ABCDEF,22'h000134}),.enable(firstCycle),.out(LFSRtest_clrn));
-	my_tri #(86) LFSRtestclrntri2(.in({86{1'b1}}),.enable(~firstCycle),.out(LFSRtest_clrn));
-	assign testout = LFSRtest_out;
-	wire LFSRtest_in;
-	assign LFSRtest_in = 1'bz;
-	LFSR #(86) LFSRtest(clk,LFSRtest_in,LFSRtest_out,1'b1,LFSRtest_clrn,~LFSRtest_prn);
-	assign loadin = LFSRtest_out[85];
+	up_counter myCounter(.C(clk), .CLR(reset), .Q(counter_out), .ENABLE(startKeyStreamGen) , .STAGEONE(stageone), .STAGETWO(stagetwo), .STAGETHREE(stagethree),.OUTPUTSTAGE(outputstage));
+	assign loadin = keyframeLFSR_out[85];
 
 	//majority clocking
 	wire[18:0] LFSR19_out;
