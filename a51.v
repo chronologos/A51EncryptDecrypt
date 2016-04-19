@@ -1,10 +1,27 @@
-module inputToA51(clk,reset,keyindex,dataindex,key,data,enterToKeyNotData, startKeyStreamGen);
-	input startKeyStreamGen; // Flip Switch
+module A51Wrapper(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data);
+	input clk, reset; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
-	input [2:0] keyindex;
-	input [4:0] dataindex;
-	input [7:0] key, data; //eventually from PS2 TODO, can simulate using modelsim for nnow
-	input clk, reset;
+	input startKeyStreamGen; // Flip Switch
+	input ps2_clock, ps2_data; // PIN ASSIGNMENTS
+
+	wire ps2_key_pressed;
+	wire [7:0] ps2_key_data;
+	wire [7:0] last_data_received;
+
+	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon; // PIN ASSIGNMENTS
+	output [7:0] lcd_data; // PIN ASSIGNMENTS
+
+	wire[7:0] data_to_lcd;
+	wire[7:0] final_xor_output; //TODO assign this
+
+	my_tri #(8) data_to_lcd_tri1(ps2_key_pressed, ~startKeyStreamGen, data_to_lcd);
+	my_tri #(8) data_to_lcd_tri2(final_xor_output, startKeyStreamGen, data_to_lcd);
+
+	PS2_Interface myps2(clk, ~reset, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, last_data_received);
+
+	// Interface with LCD, clock only on new keypress.
+	lcd mylcd(ps2_key_pressed, 1'b0, ps2_key_pressed, data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+
 
 	// Instantiate special register stores for key+frame (86 bits) and message (224 bits). These registers are special as
 	// They allow the writing of 8 bits at a time into different indices. They are controlled by a counter which increments
@@ -12,8 +29,14 @@ module inputToA51(clk,reset,keyindex,dataindex,key,data,enterToKeyNotData, start
 	// key + frame eventually piped into a LFSR, where it is then piped into a51 unit
 	wire [63:0] keyframe_out;
 	wire [223:0] datastore_out;
-	keyframe_reg key(.ps2data_in(key), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData), .clk(clk), .reset(reset));
-	datastore_reg data(.ps2data_in(data), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData), .clk(clk), .reset(reset));
+
+	// counter TODO
+	wire [2:0] keyindex;
+	wire [4:0] dataindex;
+	// counter
+
+	keyframe_reg key(.ps2data_in(last_data_received), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
+	datastore_reg data(.ps2data_in(last_data_received), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 
 	// instantiate keyframeLFSR, this will take input from our keyframe_reg
 	wire[85:0] keyframeLFSR_out, keyframeLFSR_prn, keyframeLFSR_clrn;
@@ -27,32 +50,31 @@ module inputToA51(clk,reset,keyindex,dataindex,key,data,enterToKeyNotData, start
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
 
-	a51 mya51(clk,reset, loadin, startKeyStreamGen, KeyStreamReady, a51out,r19out,r22out,r23out, testout)
+	a51 mya51(clk,reset, keyframeLFSR_out, startKeyStreamGen, KeyStreamReady, a51out,r19out,r22out,r23out, testout);
+
+	wire keystreamLFSR_out;
+	LFSR #(224) keystreamLFSR(clk,a51out,keystreamLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
 
 endmodule
 
 // This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
 module a51(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, a51out, r19out, r22out, r23out, testout); // T
-	input reset;
-	input clk; // T
-	input startKeyStreamGen;
-	output KeyStreamReady;
+	input reset, clk;
+	input startKeyStreamGen; // pin assignment to flip switch
+	input loadin; // stream from keyframLFSR
+	output KeyStreamReady; // assigned to outputstage
 	output a51out; // final output bit by bit of the A5/1
 	output[18:0] r19out; // outputs of each LFSR in A5/1
-	output [21:0] r22out;
-	output [22:0] r23out;
+	output [21:0] r22out;  // outputs of each LFSR in A5/1
+	output [22:0] r23out;  // outputs of each LFSR in A5/1
 	output [85:0] testout; // allow us to view our input key and frame bits
-	wire loadin; // T
-
-	//INPUT to keyframe and datastore registers
-
-
 
 	// instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
 	// we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
 	// 100 cycle irregular clocking and 224 cycles of valid output. these lines will be asserted
 	// whenever the respective stage is true
 	wire stageone,stagetwo,stagethree,outputstage;
+	assign KeyStreamReady = outputstage;
 	wire [9:0] counter_out;
 	up_counter myCounter(.C(clk), .CLR(reset), .Q(counter_out), .ENABLE(startKeyStreamGen) , .STAGEONE(stageone), .STAGETWO(stagetwo), .STAGETHREE(stagethree),.OUTPUTSTAGE(outputstage));
 	assign loadin = keyframeLFSR_out[85];
