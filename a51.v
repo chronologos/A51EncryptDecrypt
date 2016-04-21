@@ -1,4 +1,17 @@
-module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, sevensegout1, sevensegout2, sevensegout3);
+/***
+	_______  _______         __
+	(  ___  )(  ____ \     /\/  \
+	| (   ) || (    \/    / /\/) )
+	| (___) || (____     / /   | |
+	|  ___  |(_____ \   / /    | |
+	| (   ) |      ) ) / /     | |
+	| )   ( |/\____) )/ /    __) (_
+	|/     \|\______/ \/     \____/
+
+	Spring 2016, Yi Yan Tay and Anthony Yu
+	Hardware implementation of the ubiquitous A5/1 cipher used in GSM communications.
+***/
+module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, sevensegout1, sevensegout2, sevensegout3,sevensegout4);
 	input clk, reset; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
 	input startKeyStreamGen; // Flip Switch
@@ -7,13 +20,14 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire [7:0] ps2_key_data;
 	wire [7:0] last_data_received;
 
-	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon; // PIN ASSIGNMENTS
-	output [7:0] lcd_data; // PIN ASSIGNMENTS
-	output LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted;// LED
-	output [6:0] sevensegout1, sevensegout2, sevensegout3; // 1 for key, 2 and 3 for data
+	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
+	output [7:0] lcd_data;
+	output LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done;// LED
+	output [6:0] sevensegout1, sevensegout2, sevensegout3, sevensegout4;
 
 	wire[7:0] data_to_lcd;
 	wire[7:0] final_xor_output; //TODO assign this
+	wire KeyStreamDepleted, KeyStreamReady, a51out;
 
 	my_tri #(8) data_to_lcd_tri1(last_data_received, ~startKeyStreamGen, data_to_lcd);
 	my_tri #(8) data_to_lcd_tri2(final_xor_output, startKeyStreamGen, data_to_lcd);
@@ -25,11 +39,10 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	key presses because a single press of a key sends both a make and a break code. These codes are usually the same.
 	***/
 
-	wire accept_ps2_input, ciphertext_counter_out; // first to enable LCD when key is pressed. second to enable LCD when a new encrypted character is ready to be pushed to the LCD display.
 	assign LEDacceptps2 = accept_ps2_input;
 	assign LEDenterToKeyNotData = enterToKeyNotDataDFF2_out;
 	assign LEDstartKeyStreamGen = startKeyStreamGenDFF2_out;
-
+	assign LEDKeyStreamDepleted = KeyStreamDepleted;
 	/**
 	 ____  ____  ____
 	(  _ \/ ___)(___ \
@@ -38,17 +51,11 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	**/
 
-	TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
-	wire enterToKeyNotDataEdge;
-
-	/**
-		__     ___  ____
-	 (  )   / __)(    \
-	 / (_/\( (__  ) D (
-	 \____/ \___)(____/
-
-	 We need to reset this at a few points. 1) When hard reset is asserted. 2) When we flip switch to start entering data. 3) When we flip switch to start keystreamgen.
-	**/
+	// TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
+	wire [2:0] keycount_out;
+	wire debouncer_reset = &(keycount_out ~^ 4'b0011);
+	wire accept_ps2_input = &(keycount_out ~^ 4'b0000);
+	key_counter debouncer(clk, (debouncer_reset | reset | enterToKeyNotDataEdge), keycount_out, 1'b1, ps2_key_pressed);
 
 	/***
 	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
@@ -60,7 +67,18 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
 	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
 
-	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input) | (startKeyStreamGen & ciphertext_counter_out), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+	/**
+		__     ___  ____
+	 (  )   / __)(    \
+	 / (_/\( (__  ) D (
+	 \____/ \___)(____/
+
+	 We need to reset this at a few points. 1) When hard reset is asserted. 2) When we flip switch to start entering data. 3) When we flip switch to start keystreamgen.
+
+	 We enable this for display of input key and data, which is when @startKeyStreamGen is 0. We also enable this when we want to output ciphertext, which is when KeyStreamDepleted & startKeyStreamGenDFF2_out.
+	**/
+	wire enterToKeyNotDataEdge, message_to_lcd_done;
+	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input & ~startKeyStreamGenDFF2_out) | (startKeyStreamGenDFF2_out & KeyStreamDepleted & ~message_to_lcd_done), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
 
 	/*** Data and Key counters for storing into datastore_reg and keyframe_reg ***/
 	wire [2:0] keyindex;
@@ -68,10 +86,18 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
 	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
 
+	/***
+	_  _  ____  _  _    ____  __  ____  ____  __     __   _  _
+ / )( \(  __)( \/ )  (    \(  )/ ___)(  _ \(  )   / _\ ( \/ )
+ ) __ ( ) _)  )  (    ) D ( )( \___ \ ) __// (_/\/    \ )  /
+ \_)(_/(____)(_/\_)  (____/(__)(____/(__)  \____/\_/\_/(__/
+	***/
+	wire[3:0] debug; //DEBUG TODO
+	// Display key and message character counts
 	Hexadecimal_To_Seven_Segment converter1(keyindex,sevensegout3);
 	Hexadecimal_To_Seven_Segment converter2(dataindex[3:0],sevensegout2);
 	Hexadecimal_To_Seven_Segment converter3({{3'b0,dataindex[4]}},sevensegout1);
-
+	Hexadecimal_To_Seven_Segment converter4({{3'b0,dataindex[4]}},sevensegout4); //for debug
 
 	// Edge detection for when we switch from entering data to entering key
 	wire enterToKeyNotDataDFF1_out, enterToKeyNotDataDFF2_out;
@@ -98,14 +124,14 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire keyframeLFSR_in;
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
-
+	assign debug = keyframeLFSR_out[3:0]; //DEBUG TODO
 	//instantiate a51
-	wire KeyStreamDepleted, KeyStreamReady, a51out;
 	wire [18:0] r19out; // outputs of each LFSR in A5/1
 	wire [21:0] r22out;	// outputs of each LFSR in A5/1
 	wire [22:0] r23out;	// outputs of each LFSR in A5/1
 
 	/***
+	A51 Cipher Unit
 	Some counterintuitive pin assignments here.
 	we reset on @startKeyStreamGenEdge.
 
@@ -117,8 +143,12 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	startKeyStreamGen is assigned to startKeyStreamGenDFF2_out
 
+	our input should be keyframeLFSR_out[85], remember how LFSR works...
+	EXAMPLE 6 bit LFSR: [input ⇒ 0 ⇒ 1 ⇒ 2 ⇒ 3 ⇒ 4 ⇒ 5 ⇒ output]
+
+
 	***/
-	a51_keygen mya51(clk,reset|startKeyStreamGenEdge, keyframeLFSR_out, startKeyStreamGenDFF2_out, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out);
+	a51_keygen mya51(clk,reset|startKeyStreamGenEdge, keyframeLFSR_out[85], startKeyStreamGenDFF2_out, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out);
 
 	wire[223:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
@@ -127,7 +157,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	// we need to be able to read out 224 bit xord output 8 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	wire message_to_lcd_done = &(up_counter_out ~^ 5'd27); // done pushing after 27 cycles. TODO
+	assign message_to_lcd_done = &(up_counter_out ~^ 5'd27); // done pushing after 27 cycles. TODO
 	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
 	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 

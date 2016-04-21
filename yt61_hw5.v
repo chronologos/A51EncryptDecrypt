@@ -16,7 +16,7 @@ module yt61_hw5(	inclock, resetn, ps2_clock, ps2_data, debug_word, debug_addr, /
 	wire [31:0] lcd_write_data;
 	wire [7:0] ps2_key_data;
 	wire ps2_key_pressed;
-	wire [7:0]	ps2_out; 
+	wire [7:0]	ps2_out;
 
 
 	// clock divider (by 5, i.e., 10 MHz)
@@ -498,7 +498,7 @@ module up_counter(out, enable, clk, reset);
 			out = 8'b0 ;
 		end else if (enable) begin
 			out <= out + 8'b1;
-end
+		end
 endmodule
 
 // FROM ALU.v
