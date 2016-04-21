@@ -1,24 +1,16 @@
-module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data);
+module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, sevensegout1, sevensegout2, sevensegout3);
 	input clk, reset; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
 	input startKeyStreamGen; // Flip Switch
 	input ps2_clock, ps2_data; // PIN ASSIGNMENTS
-
-	/***
-	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
-	Compare output of last in the series with first in the series. If XOR ^ returns 1 we know there is an edge. If XNOR ~^
-	returns 1 we know there is no edge. Bounty!
-	***/
-	wire startKeyStreamGenDFF1_out, startKeyStreamGenDFF2_out;
-	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
-	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
-
 	wire ps2_key_pressed;
 	wire [7:0] ps2_key_data;
 	wire [7:0] last_data_received;
 
 	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon; // PIN ASSIGNMENTS
 	output [7:0] lcd_data; // PIN ASSIGNMENTS
+	output LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted;// LED
+	output [6:0] sevensegout1, sevensegout2, sevensegout3; // 1 for key, 2 and 3 for data
 
 	wire[7:0] data_to_lcd;
 	wire[7:0] final_xor_output; //TODO assign this
@@ -34,66 +26,125 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 
 	wire accept_ps2_input, ciphertext_counter_out; // first to enable LCD when key is pressed. second to enable LCD when a new encrypted character is ready to be pushed to the LCD display.
+	assign LEDacceptps2 = accept_ps2_input;
+	assign LEDenterToKeyNotData = enterToKeyNotDataDFF2_out;
+	assign LEDstartKeyStreamGen = startKeyStreamGenDFF2_out;
 
-	TFFE PS2_Key_MakeBreak(.d(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
+	/**
+	 ____  ____  ____
+	(  _ \/ ___)(___ \
+	 ) __/\___ \ / __/
+	(__)  (____/(____)
 
-	lcd mylcd(clk, reset, (ps2_key_pressed & accept_ps2_input) | (startKeyStreamGen & ciphertext_counter_out), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+	**/
 
-  /*** Data and Key counters for storing into datastore_reg and keyframe_reg ***/
-  wire [2:0] keyindex;
+	TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
+	wire enterToKeyNotDataEdge;
+
+	/**
+		__     ___  ____
+	 (  )   / __)(    \
+	 / (_/\( (__  ) D (
+	 \____/ \___)(____/
+
+	 We need to reset this at a few points. 1) When hard reset is asserted. 2) When we flip switch to start entering data. 3) When we flip switch to start keystreamgen.
+	**/
+
+	/***
+	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
+	Compare output of last in the series with first in the series. If XOR ^ returns 1 we know there is an edge. If XNOR ~^
+	returns 1 we know there is no edge. Bounty!
+	***/
+	wire startKeyStreamGenDFF1_out, startKeyStreamGenDFF2_out;
+	wire startKeyStreamGenEdge = startKeyStreamGenDFF1_out ^ startKeyStreamGenDFF2_out; //used to send to keyframeLFSR
+	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
+	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
+
+	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input) | (startKeyStreamGen & ciphertext_counter_out), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+
+	/*** Data and Key counters for storing into datastore_reg and keyframe_reg ***/
+	wire [2:0] keyindex;
 	wire [4:0] dataindex;
-  key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed));
-  data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed));
+	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
+	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
+
+	Hexadecimal_To_Seven_Segment converter1(keyindex,sevensegout3);
+	Hexadecimal_To_Seven_Segment converter2(dataindex[3:0],sevensegout2);
+	Hexadecimal_To_Seven_Segment converter3({{3'b0,dataindex[4]}},sevensegout1);
+
+
+	// Edge detection for when we switch from entering data to entering key
+	wire enterToKeyNotDataDFF1_out, enterToKeyNotDataDFF2_out;
+	assign enterToKeyNotDataEdge = enterToKeyNotDataDFF1_out ^ enterToKeyNotDataDFF2_out;
+	DFFE enterToKeyNotDataDFF1(.d(enterToKeyNotData),.clrn(~reset),.prn(1'b1),.clk(clk),.q(enterToKeyNotDataDFF1_out),.ena(1'b1));
+	DFFE enterToKeyNotDataDFF2(.d(enterToKeyNotDataDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(enterToKeyNotDataDFF2_out),.ena(1'b1));
 
 	/***
 	Instantiate special register stores for key+frame (86 bits) and message (224 bits). These registers are special as
 	They allow the writing of 8 bits at a time into different indices. They are controlled by a counter which increments
 	Its count every time there is a new keypress. key + frame eventually piped into a LFSR, where it is then piped into a51 unit
 	***/
-  wire [85:0] keyframe_out;
+	wire [85:0] keyframe_out;
 	wire [223:0] datastore_out;
 	keyframe_reg key(.ps2data_in(last_data_received), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 	datastore_reg data(.ps2data_in(last_data_received), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 
 	// instantiate keyframeLFSR, this will take input from our keyframe_reg
 	wire[85:0] keyframeLFSR_out, keyframeLFSR_prn, keyframeLFSR_clrn;
-	my_tri #(86) keyframeLFSRprntri(.in({keyframe_out,22'h000134}),.enable(startKeyStreamGenDFF1_out ^ startKeyStreamGenDFF2_out),.out(keyframeLFSR_prn));
-	my_tri #(86) keyframeLFSRprntri2(.in({86{1'b0}}),.enable(startKeyStreamGenDFF1_out ~^ startKeyStreamGenDFF2_out),.out(keyframeLFSR_prn));
-	my_tri #(86) keyframeLFSRclrntri(.in({keyframe_out,22'h000134}),.enable(startKeyStreamGenDFF1_out ^ startKeyStreamGenDFF2_out),.out(keyframeLFSR_clrn));
-	my_tri #(86) keyframeLFSRclrntri2(.in({86{1'b1}}),.enable(startKeyStreamGenDFF1_out ~^ startKeyStreamGenDFF2_out),.out(keyframeLFSR_clrn));
-	assign testout = keyframeLFSR_out;
+	my_tri #(86) keyframeLFSRprntri(.in({keyframe_out,22'h000134}),.enable(startKeyStreamGenEdge),.out(keyframeLFSR_prn));
+	my_tri #(86) keyframeLFSRprntri2(.in({86{1'b0}}),.enable(~startKeyStreamGenEdge),.out(keyframeLFSR_prn));
+	my_tri #(86) keyframeLFSRclrntri(.in({keyframe_out,22'h000134}),.enable(startKeyStreamGenEdge),.out(keyframeLFSR_clrn));
+	my_tri #(86) keyframeLFSRclrntri2(.in({86{1'b1}}),.enable(~startKeyStreamGenEdge),.out(keyframeLFSR_clrn));
 	wire keyframeLFSR_in;
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
 
-  //instantiate a51
-  wire KeyStreamDepleted, KeyStreamReady, a51out;
-  wire [18:0] r19out; // outputs of each LFSR in A5/1
-	wire [21:0] r22out;  // outputs of each LFSR in A5/1
-	wire [22:0] r23out;  // outputs of each LFSR in A5/1
-	wire [85:0] testout; // allow us to view our input key and frame bits
-	// startKeyStreamGen is assigned to startKeyStreamGenDFF2_out
-  a51_keygen mya51(clk,reset, keyframeLFSR_out, startKeyStreamGenDFF2_out, KeyStreamDepleted, KeyStreamReady, a51out, r19out, r22out, r23out, testout);
+	//instantiate a51
+	wire KeyStreamDepleted, KeyStreamReady, a51out;
+	wire [18:0] r19out; // outputs of each LFSR in A5/1
+	wire [21:0] r22out;	// outputs of each LFSR in A5/1
+	wire [22:0] r23out;	// outputs of each LFSR in A5/1
 
-  wire[223:0] a51_bitstream_aggregated, xored_out;
+	/***
+	Some counterintuitive pin assignments here.
+	we reset on @startKeyStreamGenEdge.
+
+	1 -> DFF1 ->1  DFF2 -> 0
+	this is clock cycle with @startKeyStreamGenEdge, we reset the counter here.
+
+	1 -> DFF1 ->1  DFF2 -> 1
+	this is clock cycle when startKeyStreamGenDFF2_out = 1 and this is when counter is enabled.
+
+	startKeyStreamGen is assigned to startKeyStreamGenDFF2_out
+
+	***/
+	a51_keygen mya51(clk,reset|startKeyStreamGenEdge, keyframeLFSR_out, startKeyStreamGenDFF2_out, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out);
+
+	wire[223:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
-  LFSR #(224) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{224{~reset}},{224{1'b1}});
+	LFSR #(224) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{224{~reset}},{224{1'b1}});
 	yt61_reg #(224) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({224{1'b1}}) , .reg_clrn({224{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepleted), .clk(clk));
 
+	// we need to be able to read out 224 bit xord output 8 bits at a time using an up counter.
+	wire [7:0] up_counter_out;
+	wire message_to_lcd_done = &(up_counter_out ~^ 5'd27); // done pushing after 27 cycles. TODO
+	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
+	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
+
+	// ASSIGN message_to_lcd_done to a LCD as well.
 
 endmodule
 
 // This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
-module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out, testout); // T
+module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out); // T
 	input reset, clk;
 	input startKeyStreamGen; // pin assignment to flip switch
 	input loadin; // stream from keyframLFSR
 	output KeyStreamReady, KeyStreamDepleted; // assigned to outputstage and done respectively
 	output a51out; // final output bit by bit of the A5/1
 	output[18:0] r19out; // outputs of each LFSR in A5/1
-	output [21:0] r22out;  // outputs of each LFSR in A5/1
-	output [22:0] r23out;  // outputs of each LFSR in A5/1
-	output [85:0] testout; // allow us to view our input key and frame bits
+	output [21:0] r22out;	// outputs of each LFSR in A5/1
+	output [22:0] r23out;	// outputs of each LFSR in A5/1
 
 	// instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
 	// we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
@@ -101,7 +152,7 @@ module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStre
 	// whenever the respective stage is true
 	wire stageone,stagetwo,stagethree,outputstage,done;
 	assign KeyStreamReady = outputstage;
-  assign KeyStreamDepleted = done;
+	assign KeyStreamDepleted = done;
 	wire [9:0] counter_out;
 	a51counter myCounter(.C(clk), .CLR(reset), .Q(counter_out), .ENABLE(startKeyStreamGen) , .STAGEONE(stageone), .STAGETWO(stagetwo), .STAGETHREE(stagethree),.OUTPUTSTAGE(outputstage),.DONE(done));
 

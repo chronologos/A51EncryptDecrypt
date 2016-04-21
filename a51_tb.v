@@ -2,13 +2,13 @@
 module a51_tb();
 
     // inputs to the DUT are reg type
-    reg clock, reset;
+    reg clock, reset, enterToKeyNotData, startKeyStreamGen, ps2_
     wire[18:0] out19;
     wire[21:0] out22;
     wire[22:0] out23;
     wire [85:0] testout;
     wire out;
-    a51 DUT(clock, reset, out,out19,out22,out23, testout);
+    module a51(clock,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data);
 
     initial
     begin

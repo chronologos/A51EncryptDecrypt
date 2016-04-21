@@ -35,20 +35,6 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	datastore_reg
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module a51_tb
-
-Top level modules:
-	a51_tb
-
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module giantMux
-
-Top level modules:
-	giantMux
-
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module keyframe_reg

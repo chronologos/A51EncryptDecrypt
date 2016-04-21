@@ -5,7 +5,7 @@ output reg STAGEONE, STAGETWO, STAGETHREE,OUTPUTSTAGE, DONE;
 reg [9:0] tmp;
 
   always @(posedge C) begin
-      if (CLR & ENABLE) begin
+      if (CLR) begin
         tmp = 10'd0;
       end else if (ENABLE) begin
 			  tmp = tmp + 10'd1;
