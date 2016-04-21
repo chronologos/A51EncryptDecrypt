@@ -1,16 +1,16 @@
-E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module datastore_regtb
-
-Top level modules:
-	datastore_regtb
-
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\up_countertb.v}
+E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module up_countertb
 
 Top level modules:
 	up_countertb
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_regtb.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module datastore_regtb
+
+Top level modules:
+	datastore_regtb
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
@@ -19,20 +19,18 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	keyframe_regtb
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {0 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module a51
--- Compiling module LFSR
--- Compiling module my_tri
--- Compiling module majority3
+** Error (suppressible): E:/Documents/SPRING2016/ECE350/FinalProject/a51.v(74): (vlog-2388) 'testout' already declared in this scope (a51).
 
-Top level modules:
-	a51
+-- Compiling module a51_keygen
+-- Compiling module LFSR
+-- Compiling module majority3
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module datastore_reg
--- Compiling module my_decoder
 
 Top level modules:
 	datastore_reg
@@ -44,12 +42,12 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	a51_tb
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_counter.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\up_counter.v}
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module up_counter
+-- Compiling module giantMux
 
 Top level modules:
-	up_counter
+	giantMux
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015

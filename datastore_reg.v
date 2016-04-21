@@ -26,12 +26,3 @@ module datastore_reg(ps2data_in, index, datastore_out, write_enable, clk, reset)
     end
   endgenerate
 endmodule
-
-
-// 5:32 one-hot decoder (using lecture 3 code)
-module my_decoder(decoder_select,decoder_out,decoder_enable);
-	input [4:0]decoder_select;
-	input decoder_enable;
-	output [31:0]decoder_out;
-	assign decoder_out = (decoder_enable << decoder_select);
-endmodule

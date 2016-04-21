@@ -16,7 +16,7 @@ module yt61_hw5(	inclock, resetn, ps2_clock, ps2_data, debug_word, debug_addr, /
 	wire [31:0] lcd_write_data;
 	wire [7:0] ps2_key_data;
 	wire ps2_key_pressed;
-	wire [7:0]	ps2_out; 
+	wire [7:0]	ps2_out;
 
 
 	// clock divider (by 5, i.e., 10 MHz)
@@ -297,7 +297,8 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	//-------
 	wire rs2matters = (&(FD_IR_out[31:27] ^~ 5'b00000)) & ~(&(FD_IR_out[31:28] ^~ 4'b0010));
 	wire stall1 = &(DX_IR_out[31:27] ^~ 5'b01000) & ((&(FD_IR_out[21:17] ^~ DX_IR_out[26:22])) | ((&(FD_IR_out[16:12] ^~ DX_IR_out[26:22])) & rs2matters));
-	wire stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
+	wire stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to
+	operate.
 	wire stall3= multdiv_active & ~multdiv_resultrdy;
 	assign stall = stall1 | stall2 | stall3;
 
