@@ -1,4 +1,6 @@
 /***
+// TODO one late for ps2 input
+// TODO why output only 10 chars
 	_______  _______         __
 	(  ___  )(  ____ \     /\/  \
 	| (   ) || (    \/    / /\/) )
@@ -29,11 +31,12 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire[7:0] final_xor_output; //TODO assign this
 	wire KeyStreamDepleted, KeyStreamReady, a51out;
 
-	my_tri #(8) data_to_lcd_tri1(last_data_received, ~startKeyStreamGen, data_to_lcd);
+	my_tri #(8) data_to_lcd_tri1(converterout, ~startKeyStreamGen, data_to_lcd);
 	my_tri #(8) data_to_lcd_tri2(final_xor_output, startKeyStreamGen, data_to_lcd);
 
 	PS2_Interface myps2(clk, ~reset, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, last_data_received);
-
+	wire[7:0] converterout;
+	scantoascii Converter(last_data_received,converterout);
 	/***
 	Interface with LCD, clock only on new keypress. We only want to use value of last_data_received every two
 	key presses because a single press of a key sends both a make and a break code. These codes are usually the same.
@@ -66,6 +69,11 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire startKeyStreamGenEdge = startKeyStreamGenDFF1_out ^ startKeyStreamGenDFF2_out; //used to send to keyframeLFSR
 	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
 	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
+
+	wire KeyStreamDepletedEdge, KeyStreamDepletedDFF1_out,  KeyStreamDepletedDFF2_out;
+	wire KeyStreamDepletedEdge = KeyStreamDepletedDFF1_out ^ KeyStreamDepletedDFF2_out; //used to send to keyframeLFSR
+	DFFE KeyStreamDepletedDFF1(.d(KeyStreamDepleted),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF1_out),.ena(1'b1));
+	DFFE KeyStreamDepletedDFF2(.d(KeyStreamDepletedDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF2_out),.ena(1'b1));
 
 	/**
 		__     ___  ____
@@ -112,8 +120,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 	wire [85:0] keyframe_out;
 	wire [223:0] datastore_out;
-	keyframe_reg key(.ps2data_in(last_data_received), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
-	datastore_reg data(.ps2data_in(last_data_received), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
+	keyframe_reg key(.ps2data_in(converterout), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
+	datastore_reg data(.ps2data_in(converterout), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 
 	// instantiate keyframeLFSR, this will take input from our keyframe_reg
 	wire[85:0] keyframeLFSR_out, keyframeLFSR_prn, keyframeLFSR_clrn;
@@ -153,16 +161,17 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire[223:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
 	LFSR #(224) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{224{~reset}},{224{1'b1}});
-	yt61_reg #(224) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({224{1'b1}}) , .reg_clrn({224{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepleted), .clk(clk));
+	yt61_reg #(224) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({224{1'b1}}) , .reg_clrn({224{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedEdge), .clk(clk));
 
 	// we need to be able to read out 224 bit xord output 8 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	assign message_to_lcd_done = &(up_counter_out ~^ 5'd27); // done pushing after 27 cycles. TODO
-	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
+	assign message_to_lcd_done = &(up_counter_out ~^ 5'd28); // done pushing after 27 cycles. TODO
+	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepletedDFF1_out & ~message_to_lcd_done), .clk(clk), .reset(reset));
+	// giantMux myGiantMux(.in({7{8'h71,8'h77,8'h65,8'h72}}),.index(up_counter_out[4:0]),.out(final_xor_output));
+	// print QWER
 	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 
-	// ASSIGN message_to_lcd_done to a LCD as well.
-
+	//TODO output is reversed
 endmodule
 
 // This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
