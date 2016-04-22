@@ -45,22 +45,25 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire[7:0] asciiout,ascii_xored;
 	wire[3:0] hexout;
 	//Converter to look up scan codes.
-	scantoascii Converter(last_data_received,asciiout); //goes to LCD from input
-	scantohex Converter2(last_data_received,hexout); // goes to keyreg and datareg
+
+	scantoascii Converter(ps2_key_data,asciiout); //goes to LCD from input
+	scantohex Converter2(ps2_key_data,hexout); // goes to keyreg and datareg
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
+	wire break_code_detected = &(asciiout ^~ 8'h21);
+
 
 	/***
-	Interface with LCD, clock only on new keypress. We only want to use value of last_data_received every three
+	Interface with LCD, clock only on new keypress. We only want to use value of ps2_key_data every three
 	key presses because a single press of a key sends both a 4 bit make and a 16 bit break code.
 	***/
 
 	// TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
 	// TODO
 	wire [3:0] keycount_out;
-	wire debouncer_reset = &(keycount_out ~^ 4'b0011);
-	wire accept_ps2_input = &(keycount_out ~^ 4'b0000);
-	key_counter debouncer(clk, (debouncer_reset | reset | enterToKeyNotDataEdge), keycount_out, 1'b1, ps2_key_pressed);
-
+	wire accept_ps2_input = &(keycount_out ~^ 4'd0);
+	wire debounce_reset =  &(keycount_out ~^ 4'd3);
+	// wire accept_ps2_input = 1'b1;
+	key_debouncer debouncer((reset | enterToKeyNotDataEdge | debounce_reset), keycount_out, 1'b1, ps2_key_pressed);
 	/***
 	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
 	Compare output of last in the series with first in the series. If XOR ^ returns 1 we know there is an edge. If XNOR ~^
@@ -124,8 +127,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 	wire [85:0] keyframe_out;
 	wire [127:0] datastore_out;
-	keyframe_reg key(.ps2data_in(hexout), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
-	datastore_reg data(.ps2data_in(hexout), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
+	keyframe_reg key(.ps2data_in(hexout), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen & accept_ps2_input), .clk(clk), .reset(reset));
+	datastore_reg data(.ps2data_in(hexout), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen & accept_ps2_input), .clk(clk), .reset(reset));
 
 	// instantiate keyframeLFSR, this will take input from our keyframe_reg
 	wire[85:0] keyframeLFSR_out, keyframeLFSR_prn, keyframeLFSR_clrn;

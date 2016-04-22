@@ -107,6 +107,7 @@ set_location_assignment PIN_AE19 -to sevensegout4[2]
 set_location_assignment PIN_AF19 -to sevensegout4[1]
 set_location_assignment PIN_AE18 -to sevensegout4[0]
 set_location_assignment PIN_H17 -to LEDmessage_to_lcd_done
+set_global_assignment -name VERILOG_FILE "F:/Documents/SPRING2016/ECE350/FinalProject/key_debouncer.v"
 set_global_assignment -name VERILOG_FILE "F:/Documents/SPRING2016/ECE350/FinalProject/scantoascii.v"
 set_global_assignment -name VERILOG_FILE a51counter.v
 set_global_assignment -name VERILOG_FILE giantMux.v

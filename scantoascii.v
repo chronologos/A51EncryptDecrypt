@@ -21,6 +21,7 @@ module scantoascii(in, out);
     8'h23: out=8'h44; //D
     8'h24: out=8'h45; //E
     8'h2B: out=8'h46; //F
+    8'hF0: out=8'h21; //scan break code is !
     default: out=8'h78; //x = error
   endcase
 
