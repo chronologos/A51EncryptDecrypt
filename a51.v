@@ -50,7 +50,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	scantohex Converter2(ps2_key_data,hexout); // goes to keyreg and datareg
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
 	wire break_code_detected = &(asciiout ^~ 8'h21);
-
+	wire accept_ps2_input;
+	JKFFE breakCode(.J(break_code_detected & ps2_key_pressed), .K(~break_code_detected & ps2_key_pressed), .CLK(clk), .CLRN(~reset), .PRN(1'b1), .ENA(1'b1), .Q(accept_ps2_input));
 
 	/***
 	Interface with LCD, clock only on new keypress. We only want to use value of ps2_key_data every three
@@ -59,11 +60,11 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	// TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
 	// TODO
-	wire [3:0] keycount_out;
-	wire accept_ps2_input = &(keycount_out ~^ 4'd0);
-	wire debounce_reset =  &(keycount_out ~^ 4'd3);
+	// wire [3:0] keycount_out;
+	// wire accept_ps2_input = &(keycount_out ~^ 4'd0);
+	// wire debounce_reset =  &(keycount_out ~^ 4'd3);
 	// wire accept_ps2_input = 1'b1;
-	key_debouncer debouncer((reset | enterToKeyNotDataEdge | debounce_reset), keycount_out, 1'b1, ps2_key_pressed);
+	// key_debouncer debouncer((reset | enterToKeyNotDataEdge | debounce_reset), keycount_out, 1'b1, ps2_key_pressed);
 	/***
 	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
 	Compare output of last in the series with first in the series. If XOR ^ returns 1 we know there is an edge. If XNOR ~^
@@ -173,7 +174,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd31); // TODO
+	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd32); // TODO
 	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
 	giantMux myGiantMux(.in(datastore_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 	// print QWER
