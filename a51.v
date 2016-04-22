@@ -42,12 +42,12 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	**/
 
 	PS2_Interface myps2(clk, ~reset, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, last_data_received);
-	wire[7:0] asciiout;
+	wire[7:0] asciiout,ascii_xored;
 	wire[3:0] hexout;
 	//Converter to look up scan codes.
-	scantoascii Converter(last_data_received,ascii);
-	scantohex Converter2(last_data_received,hexout);
-	hextoascii Converter3(final_xor_output, ascii_xored);
+	scantoascii Converter(last_data_received,asciiout); //goes to LCD from input
+	scantohex Converter2(last_data_received,hexout); // goes to keyreg and datareg
+	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
 
 	/***
 	Interface with LCD, clock only on new keypress. We only want to use value of last_data_received every three
@@ -55,7 +55,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 
 	// TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
-	wire [2:0] keycount_out;
+	// TODO
+	wire [3:0] keycount_out;
 	wire debouncer_reset = &(keycount_out ~^ 4'b0011);
 	wire accept_ps2_input = &(keycount_out ~^ 4'b0000);
 	key_counter debouncer(clk, (debouncer_reset | reset | enterToKeyNotDataEdge), keycount_out, 1'b1, ps2_key_pressed);
@@ -92,7 +93,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	my_tri #(8) data_to_lcd_tri2(ascii_xored, startKeyStreamGen, data_to_lcd);
 
 	/*** Data and Key counters for storing into datastore_reg and keyframe_reg ***/
-	wire [2:0] keyindex;
+	wire [3:0] keyindex;
 	wire [4:0] dataindex;
 	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
 	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
@@ -105,10 +106,10 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 	wire[3:0] debug; //DEBUG TODO
 	// Display key and message character counts
-	Hexadecimal_To_Seven_Segment converter1(keyindex,sevensegout3);
-	Hexadecimal_To_Seven_Segment converter2(dataindex[3:0],sevensegout2);
-	Hexadecimal_To_Seven_Segment converter3({{3'b0,dataindex[4]}},sevensegout1);
-	Hexadecimal_To_Seven_Segment converter4(debug,sevensegout4); //for debug
+	Hexadecimal_To_Seven_Segment counter(keyindex,sevensegout3);
+	Hexadecimal_To_Seven_Segment counter2(dataindex[3:0],sevensegout2);
+	Hexadecimal_To_Seven_Segment counter3({{3'b0,dataindex[4]}},sevensegout1);
+	Hexadecimal_To_Seven_Segment counter4(debug,sevensegout4); //for debug
 
 	// Edge detection for when we switch from entering data to entering key
 	wire enterToKeyNotDataDFF1_out, enterToKeyNotDataDFF2_out;
@@ -117,12 +118,12 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	DFFE enterToKeyNotDataDFF2(.d(enterToKeyNotDataDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(enterToKeyNotDataDFF2_out),.ena(1'b1));
 
 	/***
-	Instantiate special register stores for key+frame (86 bits) and message (224 bits). These registers are special as
+	Instantiate special register stores for key+frame (86 bits) and message (128 bits). These registers are special as
 	They allow the writing of 8 bits at a time into different indices. They are controlled by a counter which increments
 	Its count every time there is a new keypress. key + frame eventually piped into a LFSR, where it is then piped into a51 unit
 	***/
 	wire [85:0] keyframe_out;
-	wire [223:0] datastore_out;
+	wire [127:0] datastore_out;
 	keyframe_reg key(.ps2data_in(hexout), .keyindex(keyindex), .keyframe_out(keyframe_out), .write_enable(enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 	datastore_reg data(.ps2data_in(hexout), .index(dataindex), .datastore_out(datastore_out), .write_enable(~enterToKeyNotData & ps2_key_pressed & ~startKeyStreamGen), .clk(clk), .reset(reset));
 
@@ -136,6 +137,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
 	assign debug = keyframeLFSR_out[3:0]; //DEBUG TODO
+
 	//instantiate a51
 	wire [18:0] r19out; // outputs of each LFSR in A5/1
 	wire [21:0] r22out;	// outputs of each LFSR in A5/1
@@ -161,16 +163,16 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	***/
 	a51_keygen mya51(clk,reset|startKeyStreamGenEdge, keyframeLFSR_out[85], startKeyStreamGenDFF2_out, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out);
 
-	wire[223:0] a51_bitstream_aggregated, xored_out;
+	wire[127:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
-	LFSR #(224) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{224{~reset}},{224{1'b1}});
-	yt61_reg #(224) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({224{1'b1}}) , .reg_clrn({224{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedEdge), .clk(clk));
+	LFSR #(128) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{128{~reset}},{128{1'b1}});
+	yt61_reg #(128) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({128{1'b1}}) , .reg_clrn({128{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedEdge), .clk(clk));
 
-	// we need to be able to read out 224 bit xord output 8 bits at a time using an up counter.
+	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	assign message_to_lcd_done = &(up_counter_out ~^ 5'd28); // done pushing after 27 cycles. TODO
+	assign message_to_lcd_done = &(up_counter_out[4:0] ~^ 5'd31); // TODO
 	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepletedDFF1_out & ~message_to_lcd_done), .clk(clk), .reset(reset));
-	giantMux myGiantMux(.in({7{8'hEE,8'hEF,8'h00,8'h01}}),.index(up_counter_out[4:0]),.out(final_xor_output));
+	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 	// print QWER
 	// giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 
@@ -203,7 +205,7 @@ module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStre
 
 	// instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
 	// we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
-	// 100 cycle irregular clocking and 224 cycles of valid output. these lines will be asserted
+	// 100 cycle irregular clocking and 128 cycles of valid output. these lines will be asserted
 	// whenever the respective stage is true
 	wire stageone,stagetwo,stagethree,outputstage,done;
 	assign KeyStreamReady = outputstage;

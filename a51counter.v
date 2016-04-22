@@ -28,7 +28,7 @@ reg [9:0] tmp;
 			STAGETHREE <= 1;
       OUTPUTSTAGE <= 0;
       DONE <= 0;
-    end else if (tmp > 10'd186 && tmp<=10'd410) begin
+    end else if (tmp > 10'd186 && tmp<=10'd314) begin
 			STAGEONE <= 0;
 			STAGETWO <= 0;
 			STAGETHREE <= 0;
