@@ -173,9 +173,9 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	assign message_to_lcd_done = &(up_counter_out[4:0] ~^ 5'd31); // TODO
-	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepletedDFF1_out & ~message_to_lcd_done), .clk(clk), .reset(reset));
-	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
+	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd31); // TODO
+	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
+	giantMux myGiantMux(.in(datastore_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 	// print QWER
 	// giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 
