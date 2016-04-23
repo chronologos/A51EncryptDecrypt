@@ -1,65 +1,99 @@
-module yt61_hw5(	inclock, resetn, ps2_clock, ps2_data, debug_word, debug_addr, /*leds,*/
-					lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon,
-					/*seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8*/);
+/***
+ECE350 Final Project
+5 Stage Pipelined, Full Bypass Processor with parallel A5/1 Stream Cipher Unit
+2016, Yi Yan Tay, Anthony Yu
+***/
+module yt61_hw5(inclock, resetn, ps2_clock, ps2_data, a51_enterToKeyNotData, a51_startKeyStreamGen,
+								/**debug_word, debug_addr**/,
+								lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, sevensegout1, sevensegout2, sevensegout3,
+								LED17, LED16, LED15, LED14, LED13);
 
 	input inclock, resetn;
 	input ps2_data, ps2_clock;
+	input a51_enterToKeyNotData, a51_startKeyStreamGen; //inputs to a51 from IO
 
 	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
 	output [7:0] lcd_data;
-	// output [6:0] seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8;
-	output [31:0] debug_word;
-	output [11:0] debug_addr;
+	// output [31:0] debug_word;
+	// output [11:0] debug_addr;
+	output[6:0] sevensegout1, sevensegout2, sevensegout3;
+	output LED17, LED16, LED15, LED14, LED13;
 
 	wire clock;
 	wire lcd_write_en;
-	wire [31:0] lcd_write_data;
+	wire [31:0] lcd_write_data; // TODO
 	wire [7:0] ps2_key_data;
 	wire ps2_key_pressed;
-	wire [7:0]	ps2_out;
+	wire [7:0]	ps2_out; // TODO
 
+
+	wire [3:0] a51_keyindex; //from a51 to hex display
+	wire [4:0] a51_dataindex; //from a51 to hex display
 
 	// clock divider (by 5, i.e., 10 MHz)
 	// pll div(inclock,clock);
-
 	// UNCOMMENT FOLLOWING LINE AND COMMENT ABOVE LINE TO RUN AT 50 MHz
+
 	assign clock = inclock;
 
-	// your processor
-	processor myprocessor(clock, ~resetn, ps2_key_pressed, ps2_out, lcd_write_en, lcd_write_data, debug_word, debug_addr);
+	/**
+		__    ___    _  __
+	 / _\  / __)  / )/  \
+	/    \(___ \ / /(_/ /
+	\_/\_/(____/(_/  (__)
+	**/
+	wire a51_enable_from_processor, a51_done, a51_reset; //processor to a51 and back
 
-	// keyboard controller
+	//a51 to IO and back
+	wire a51_lcd_reset, a51_lcd_enable;
+	wire [7:0] a51_lcd_data;
+
+	// TODO enable
+	a51 myA51(.clk(clock), .reset(~resetn), .enable(a51_enable_from_processor | 1'b1), .enterToKeyNotData(a51_enterToKeyNotData), .startKeyStreamGen(a51_startKeyStreamGen), .ps2_key_pressed(ps2_key_pressed), .ps2_key_data(ps2_key_data), .LEDerror(LED14), .LEDenterToKeyNotData(LED17), .LEDstartKeyStreamGen(LED16), .LEDKeyStreamDepleted(LED15), .LEDmessage_to_lcd_done(a51_done), .keyindex_out(a51_keyindex), .dataindex_out(a51_dataindex), .data_to_lcd_out(a51_lcd_data), .lcd_reset(a51_lcd_reset), .lcd_enable(a51_lcd_enable));
+
+	assign LED13 = a51_done;
+
+	// your processor
+	// processor myprocessor(clock, ~resetn, ps2_key_pressed, ps2_out, lcd_write_en, lcd_write_data, debug_word, debug_addr, a51_enable_from_processor, a51_done, a51_reset);
+
+
+	/**
+	 ____  ____  ____
+	(  _ \/ ___)(___ \
+	 ) __/\___ \ / __/
+	(__)  (____/(____)
+
+	**/
+
 	PS2_Interface myps2(clock, resetn, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, ps2_out);
 
 	// lcd controller
-	lcd mylcd(clock, ~resetn, lcd_write_en, lcd_write_data[7:0], lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+	lcd mylcd(clock, ~resetn | a51_lcd_reset, lcd_write_en | a51_lcd_enable, a51_lcd_data, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
 
-	// example for sending ps2 data to the first two seven segment displays
-	// Hexadecimal_To_Seven_Segment hex1(ps2_out[3:0], seg1);
-	// Hexadecimal_To_Seven_Segment hex2(ps2_out[7:4], seg2);
+	/***
+	_  _  ____  _  _    ____  __  ____  ____  __     __   _  _
+ / )( \(  __)( \/ )  (    \(  )/ ___)(  _ \(  )   / _\ ( \/ )
+ ) __ ( ) _)  )  (    ) D ( )( \___ \ ) __// (_/\/    \ )  /
+ \_)(_/(____)(_/\_)  (____/(__)(____/(__)  \____/\_/\_/(__/
+	***/
 
-	// the other seven segment displays are currently set to 0
-	// Hexadecimal_To_Seven_Segment hex3(4'b0, seg3);
-	// Hexadecimal_To_Seven_Segment hex4(4'b0, seg4);
-	// Hexadecimal_To_Seven_Segment hex5(4'b0, seg5);
-	// Hexadecimal_To_Seven_Segment hex6(4'b0, seg6);
-	// Hexadecimal_To_Seven_Segment hex7(4'b0, seg7);
-	// Hexadecimal_To_Seven_Segment hex8(4'b0, seg8);
-
-	// some LEDs that you could use for debugging if you wanted
-	// assign leds = 8'b00101011;
+	// Display key and message character counts
+	Hexadecimal_To_Seven_Segment counter(a51_keyindex,sevensegout3);
+	Hexadecimal_To_Seven_Segment counter2(a51_dataindex[3:0],sevensegout2);
+	Hexadecimal_To_Seven_Segment counter3({{3'b0,a51_dataindex[4]}},sevensegout1);
 
 endmodule
 
-module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, debug_data, debug_addr);
+module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, debug_data, debug_addr, a51_en, a51_done, a51_reset);
 
-	input clock, reset, ps2_key_pressed;
+	input clock, reset, ps2_key_pressed, a51_done;
 	input [7:0]	ps2_out;
 	output lcd_write;
 	output [31:0] lcd_data;
 	// GRADER OUTPUTS - YOU MUST CONNECT TO YOUR DMEM
 	output [31:0] debug_data;
 	output [11:0] debug_addr;
+	output a51_en, a51_reset;
 
 	// -----------------------------
 	// ---- your processor here ----

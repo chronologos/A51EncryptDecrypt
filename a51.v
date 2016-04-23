@@ -10,53 +10,44 @@
 
 	Spring 2016, Yi Yan Tay and Anthony Yu
 	Hardware implementation of the ubiquitous A5/1 cipher used in GSM communications.
+
+	instantiation
+	a51 myA51(.clk(), .reset(), .enable(), .enterToKeyNotData(), .startKeyStreamGen(), .ps2_key_pressed(), .ps2_key_data(), .LEDerror(), .LEDenterToKeyNotData(), .LEDstartKeyStreamGen(), .LEDKeyStreamDepleted(), .LEDmessage_to_lcd_done(), .keyindex_out(), .dataindex_out(), .data_to_lcd_out(), .lcd_reset(), .lcd_enable());
 ***/
 
-module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, sevensegout1, sevensegout2, sevensegout3);
-	input clk, reset; //ASSIGN reset to some button.
+module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pressed, ps2_key_data, LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, keyindex_out, dataindex_out, data_to_lcd_out, lcd_reset, lcd_enable);
+
+	input clk, reset, enable; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
 	input startKeyStreamGen; // Flip Switch
-	input ps2_clock, ps2_data; // PIN ASSIGNMENTS
-	wire error;
-	wire ps2_key_pressed;
-	wire [7:0] ps2_key_data;
-	wire [7:0] last_data_received;
+	input ps2_key_pressed;
+	input [7:0] ps2_key_data;
 
-	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
-	output [7:0] lcd_data;
 	output LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done;// LED
-	output [6:0] sevensegout1, sevensegout2, sevensegout3;
+	output[3:0] keyindex_out;
+	output[4:0] dataindex_out;
+	output[7:0] data_to_lcd_out;
+	output lcd_reset; // a51 unit needs to be able to reset LCD module.
+	output lcd_enable;
 
+	wire error;
 	wire[7:0] data_to_lcd;
 	wire[3:0] final_xor_output;
 	wire KeyStreamDepleted, KeyStreamReady, a51out;
+	wire internal_lcd_reset, internal_lcd_enable;
 
-
-	/**
-	 ____  ____  ____
-	(  _ \/ ___)(___ \
-	 ) __/\___ \ / __/
-	(__)  (____/(____)
-
-	**/
-
-	PS2_Interface myps2(clk, ~reset, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, last_data_received);
+	//Converters to look up scan codes.
 	wire[7:0] asciiout,ascii_xored;
 	wire[3:0] hexout;
-	//Converter to look up scan codes.
-
 	scantoascii Converter(ps2_key_data,asciiout); //goes to LCD from input
 	scantohex Converter2(ps2_key_data,hexout); // goes to keyreg and datareg
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
 	wire break_code_detected = &(asciiout ^~ 8'h21);
 	wire accept_ps2_input;
-	//JKFFE to only detect keypress after breakcode
-	JKFFE breakCode(.J(break_code_detected & ps2_key_pressed), .K(~break_code_detected & ps2_key_pressed), .CLK(clk), .CLRN(~reset), .PRN(1'b1), .ENA(1'b1), .Q(accept_ps2_input));
+	//JKFFE to only detect keypress after breakcode  We only want to use value of ps2_key_data every three
+	// key presses because a single press of a key sends both a 4 bit make and a 16 bit break code.
+	JKFFE breakCode(.J(break_code_detected & ps2_key_pressed), .K(~break_code_detected & ps2_key_pressed), .CLK(clk), .CLRN(~reset), .PRN(1'b1), .ENA(enable), .Q(accept_ps2_input));
 
-	/***
-	Interface with LCD, clock only on new keypress. We only want to use value of ps2_key_data every three
-	key presses because a single press of a key sends both a 4 bit make and a 16 bit break code.
-	***/
 
 	/***
 	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
@@ -68,6 +59,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
 	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
 
+	// more edge detection
 	wire KeyStreamDepletedEdge, KeyStreamDepletedDFF1_out,  KeyStreamDepletedDFF2_out, KeyStreamDepletedDFF3_out;
 	assign KeyStreamDepletedEdge = KeyStreamDepletedDFF1_out ^ KeyStreamDepletedDFF2_out; //used to send to keyframeLFSR
 	DFFE KeyStreamDepletedDFF1(.d(KeyStreamDepleted),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF1_out),.ena(1'b1));
@@ -81,12 +73,16 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	 / (_/\( (__  ) D (
 	 \____/ \___)(____/
 
-	 We need to reset this at a few points. 1) When hard reset is asserted. 2) When we flip switch to start entering data. 3) When we flip switch to start keystreamgen.
+	 LCD is in external module but has controls we need to assert within this one.
 
-	 We enable this for display of input key and data, which is when @startKeyStreamGen is 0. We also enable this when we want to output ciphertext, which is when KeyStreamDepleted & startKeyStreamGenDFF2_out.
+	 We need to @internal_lcd_reset LCD at a few points. 1) When hard reset is asserted. 2) When we flip switch to start entering data. 3) When we flip switch to start keystreamgen.
+
+	 We @internal_lcd_enable this for display of input key and data, which is when @startKeyStreamGen is 0. We also enable this when we want to output ciphertext, which is when KeyStreamDepleted & startKeyStreamGenDFF2_out.
 	**/
+
 	wire enterToKeyNotDataEdge, message_to_lcd_done;
-	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input & ~startKeyStreamGenDFF2_out) | (startKeyStreamGenDFF2_out & KeyStreamDepletedDFF3_out & ~message_to_lcd_done), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+	assign internal_lcd_enable = (ps2_key_pressed & accept_ps2_input & ~startKeyStreamGenDFF2_out) | (startKeyStreamGenDFF2_out & KeyStreamDepletedDFF3_out & ~message_to_lcd_done);
+	assign internal_lcd_reset = (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge );
 
 	my_tri #(8) data_to_lcd_tri1(asciiout, ~startKeyStreamGen, data_to_lcd);
 	my_tri #(8) data_to_lcd_tri2(ascii_xored, startKeyStreamGen, data_to_lcd);
@@ -97,17 +93,6 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
 	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
 
-	/***
-	_  _  ____  _  _    ____  __  ____  ____  __     __   _  _
- / )( \(  __)( \/ )  (    \(  )/ ___)(  _ \(  )   / _\ ( \/ )
- ) __ ( ) _)  )  (    ) D ( )( \___ \ ) __// (_/\/    \ )  /
- \_)(_/(____)(_/\_)  (____/(__)(____/(__)  \____/\_/\_/(__/
-	***/
-
-	// Display key and message character counts
-	Hexadecimal_To_Seven_Segment counter(keyindex,sevensegout3);
-	Hexadecimal_To_Seven_Segment counter2(dataindex[3:0],sevensegout2);
-	Hexadecimal_To_Seven_Segment counter3({{3'b0,dataindex[4]}},sevensegout1);
 
 	// Edge detection for when we switch from entering data to entering key
 	wire enterToKeyNotDataDFF1_out, enterToKeyNotDataDFF2_out;
@@ -175,16 +160,21 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	// giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 
 	/***
-	 __    ____  ____
-	(  )  (  __)(    \
-	/ (_/\ ) _)  ) D (
-	\____/(____)(____/
+		__   _  _  ____  ____  _  _  ____  ____
+	 /  \ / )( \(_  _)(  _ \/ )( \(_  _)/ ___)
+	(  O )) \/ (  )(   ) __/) \/ (  )(  \___ \
+	 \__/ \____/ (__) (__)  \____/ (__) (____/
 	***/
 
 	assign LEDerror = error;
 	assign LEDenterToKeyNotData = enterToKeyNotDataDFF2_out;
 	assign LEDstartKeyStreamGen = startKeyStreamGenDFF2_out;
 	assign LEDKeyStreamDepleted = KeyStreamDepleted;
+	assign keyindex_out = keyindex;
+	assign dataindex_out = dataindex;
+	assign data_to_lcd_out = data_to_lcd;
+	assign lcd_reset = internal_lcd_reset;
+	assign lcd_enable = internal_lcd_enable;
 
 endmodule
 
