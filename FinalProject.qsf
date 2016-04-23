@@ -73,7 +73,6 @@ set_location_assignment PIN_AA22 -to reset
 set_location_assignment PIN_Y24 -to startKeyStreamGen
 set_location_assignment PIN_G16 -to LEDstartKeyStreamGen
 set_location_assignment PIN_H15 -to LEDenterToKeyNotData
-set_location_assignment PIN_F15 -to LEDacceptps2
 set_location_assignment PIN_G15 -to LEDKeyStreamDepleted
 set_location_assignment PIN_AD17 -to sevensegout1[0]
 set_location_assignment PIN_AA14 -to sevensegout1[6]
@@ -99,13 +98,6 @@ set_location_assignment PIN_AD18 -to sevensegout3[0]
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_location_assignment PIN_AB19 -to sevensegout4[6]
-set_location_assignment PIN_AA19 -to sevensegout4[5]
-set_location_assignment PIN_AG21 -to sevensegout4[4]
-set_location_assignment PIN_AH21 -to sevensegout4[3]
-set_location_assignment PIN_AE19 -to sevensegout4[2]
-set_location_assignment PIN_AF19 -to sevensegout4[1]
-set_location_assignment PIN_AE18 -to sevensegout4[0]
 set_location_assignment PIN_H17 -to LEDmessage_to_lcd_done
 set_global_assignment -name VERILOG_FILE "F:/Documents/SPRING2016/ECE350/FinalProject/key_debouncer.v"
 set_global_assignment -name VERILOG_FILE "F:/Documents/SPRING2016/ECE350/FinalProject/scantoascii.v"

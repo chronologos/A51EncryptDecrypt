@@ -1,6 +1,4 @@
 /***
-// TODO one late for ps2 input
-// TODO why output only 10 chars
 	_______  _______         __
 	(  ___  )(  ____ \     /\/  \
 	| (   ) || (    \/    / /\/) )
@@ -14,22 +12,23 @@
 	Hardware implementation of the ubiquitous A5/1 cipher used in GSM communications.
 ***/
 
-module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, sevensegout1, sevensegout2, sevensegout3,sevensegout4);
+module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon, lcd_data, LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, sevensegout1, sevensegout2, sevensegout3);
 	input clk, reset; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
 	input startKeyStreamGen; // Flip Switch
 	input ps2_clock, ps2_data; // PIN ASSIGNMENTS
+	wire error;
 	wire ps2_key_pressed;
 	wire [7:0] ps2_key_data;
 	wire [7:0] last_data_received;
 
 	output lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
 	output [7:0] lcd_data;
-	output LEDacceptps2, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done;// LED
-	output [6:0] sevensegout1, sevensegout2, sevensegout3, sevensegout4;
+	output LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done;// LED
+	output [6:0] sevensegout1, sevensegout2, sevensegout3;
 
 	wire[7:0] data_to_lcd;
-	wire[3:0] final_xor_output; // TODO 4 bits
+	wire[3:0] final_xor_output;
 	wire KeyStreamDepleted, KeyStreamReady, a51out;
 
 
@@ -51,6 +50,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
 	wire break_code_detected = &(asciiout ^~ 8'h21);
 	wire accept_ps2_input;
+	//JKFFE to only detect keypress after breakcode
 	JKFFE breakCode(.J(break_code_detected & ps2_key_pressed), .K(~break_code_detected & ps2_key_pressed), .CLK(clk), .CLRN(~reset), .PRN(1'b1), .ENA(1'b1), .Q(accept_ps2_input));
 
 	/***
@@ -58,13 +58,6 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	key presses because a single press of a key sends both a 4 bit make and a 16 bit break code.
 	***/
 
-	// TFFE PS2_Key_MakeBreak(.t(ps2_key_pressed),.clrn(~reset),.prn(1'b1),.clk(clk),.q(accept_ps2_input),.ena(1'b1));
-	// TODO
-	// wire [3:0] keycount_out;
-	// wire accept_ps2_input = &(keycount_out ~^ 4'd0);
-	// wire debounce_reset =  &(keycount_out ~^ 4'd3);
-	// wire accept_ps2_input = 1'b1;
-	// key_debouncer debouncer((reset | enterToKeyNotDataEdge | debounce_reset), keycount_out, 1'b1, ps2_key_pressed);
 	/***
 	Do edge detection: We want to detect the clock cycle that startKeyStreamGen just turns on. We use two DFFEs.
 	Compare output of last in the series with first in the series. If XOR ^ returns 1 we know there is an edge. If XNOR ~^
@@ -110,12 +103,11 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
  ) __ ( ) _)  )  (    ) D ( )( \___ \ ) __// (_/\/    \ )  /
  \_)(_/(____)(_/\_)  (____/(__)(____/(__)  \____/\_/\_/(__/
 	***/
-	wire[3:0] debug; //DEBUG TODO
+
 	// Display key and message character counts
 	Hexadecimal_To_Seven_Segment counter(keyindex,sevensegout3);
 	Hexadecimal_To_Seven_Segment counter2(dataindex[3:0],sevensegout2);
 	Hexadecimal_To_Seven_Segment counter3({{3'b0,dataindex[4]}},sevensegout1);
-	Hexadecimal_To_Seven_Segment counter4(debug,sevensegout4); //for debug
 
 	// Edge detection for when we switch from entering data to entering key
 	wire enterToKeyNotDataDFF1_out, enterToKeyNotDataDFF2_out;
@@ -142,7 +134,6 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	wire keyframeLFSR_in;
 	assign keyframeLFSR_in = 1'bz;
 	LFSR #(86) keyframeLFSR(clk,keyframeLFSR_in,keyframeLFSR_out,1'b1,keyframeLFSR_clrn,~keyframeLFSR_prn);
-	assign debug = keyframeLFSR_out[3:0]; //DEBUG TODO
 
 	//instantiate a51
 	wire [18:0] r19out; // outputs of each LFSR in A5/1
@@ -165,8 +156,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	our input should be keyframeLFSR_out[85], remember how LFSR works...
 	EXAMPLE 6 bit LFSR: [input ⇒ 0 ⇒ 1 ⇒ 2 ⇒ 3 ⇒ 4 ⇒ 5 ⇒ output]
 
-
 	***/
+
 	a51_keygen mya51(clk,reset|startKeyStreamGenEdge, keyframeLFSR_out[85], startKeyStreamGenDFF2_out, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out);
 
 	wire[127:0] a51_bitstream_aggregated, xored_out;
@@ -177,13 +168,11 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
-	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd32); // TODO
+	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd32);
 	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepletedDFF3_out & ~message_to_lcd_done), .clk(clk), .reset(reset));
 	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 	// print QWER
 	// giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
-
-	//TODO output is reversed
 
 	/***
 	 __    ____  ____
@@ -192,14 +181,17 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	\____/(____)(____/
 	***/
 
-	assign LEDacceptps2 = accept_ps2_input;
+	assign LEDerror = error;
 	assign LEDenterToKeyNotData = enterToKeyNotDataDFF2_out;
 	assign LEDstartKeyStreamGen = startKeyStreamGenDFF2_out;
 	assign LEDKeyStreamDepleted = KeyStreamDepleted;
 
 endmodule
 
-// This is all the internal a51 logic, it starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
+/***
+Keystream Generator. Generates 224 bits of valid keystream output for use in stream cipher.
+Unit starts operating when @startKeyStreamGen is asserted. Last four parameters are testing.
+***/
 module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStreamDepleted, a51out, r19out, r22out, r23out); // T
 	input reset, clk;
 	input startKeyStreamGen; // pin assignment to flip switch
@@ -210,10 +202,11 @@ module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStre
 	output [21:0] r22out;	// outputs of each LFSR in A5/1
 	output [22:0] r23out;	// outputs of each LFSR in A5/1
 
-	// instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
-	// we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
-	// 100 cycle irregular clocking and 128 cycles of valid output. these lines will be asserted
-	// whenever the respective stage is true
+	/*** instantiate counter, this will be the "pulse" of the A5/1 cipher encrypt/decrypt unit.
+	we know that the A5/1 cipher setup has 4 stages: 64 cycle key xor, 22 cycle frame xor
+	100 cycle irregular clocking and 128 cycles of valid output. these lines will be asserted
+	whenever the respective stage is true
+	***/
 	wire stageone,stagetwo,stagethree,outputstage,done;
 	assign KeyStreamReady = outputstage;
 	assign KeyStreamDepleted = done;
@@ -259,10 +252,10 @@ module a51_keygen(clk, reset, loadin, startKeyStreamGen, KeyStreamReady, KeyStre
 	assign a51out = LFSR23_out[22] ^ LFSR22_out[21] ^ LFSR19_out[18];
 endmodule
 
-// OTHER MODULES
-
-// Linear Feedback Shift Register
-// EXAMPLE 6 bit LFSR: [input ⇒ 0 ⇒ 1 ⇒ 2 ⇒ 3 ⇒ 4 ⇒ 5 ⇒ output]
+/***
+Linear Feedback Shift Register
+EXAMPLE 6 bit LFSR: [input ⇒ 0 ⇒ 1 ⇒ 2 ⇒ 3 ⇒ 4 ⇒ 5 ⇒ output]
+***/
 module LFSR(clk,in,out,write_enable,clrn,prn);
 	parameter DATA_WIDTH = 32;
 	input clk, in, write_enable;
@@ -279,7 +272,10 @@ module LFSR(clk,in,out,write_enable,clrn,prn);
 	endgenerate
 endmodule
 
-// 3 bit majority function - return majority bit out of 3 input bits.
+/***
+3 bit majority function - return majority bit out of 3 input bits.
+used in irregular clocking of a51_keygen
+***/
 module majority3 (x1, x2, x3, f);
 	input x1, x2, x3;
 	output f;
