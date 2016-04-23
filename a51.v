@@ -171,8 +171,8 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	wire[127:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
-	assign a51_bitstream_aggregated = {128{1'b1}}; //DEBUG
-	//LFSR #(128) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepletedDFF2_out,{128{~reset}},{128{1'b1}});
+	// assign a51_bitstream_aggregated = {128{1'b1}}; //DEBUG
+	LFSR #(128) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepletedDFF2_out,{128{~reset}},{128{1'b1}});
 	yt61_reg #(128) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({128{1'b1}}) , .reg_clrn({128{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedDFF2_out), .clk(clk));
 
 	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
