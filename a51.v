@@ -75,10 +75,12 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	DFFE startKeyStreamGenDFF1(.d(startKeyStreamGen),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF1_out),.ena(1'b1));
 	DFFE startKeyStreamGenDFF2(.d(startKeyStreamGenDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(startKeyStreamGenDFF2_out),.ena(1'b1));
 
-	wire KeyStreamDepletedEdge, KeyStreamDepletedDFF1_out,  KeyStreamDepletedDFF2_out;
+	wire KeyStreamDepletedEdge, KeyStreamDepletedDFF1_out,  KeyStreamDepletedDFF2_out, KeyStreamDepletedDFF3_out;
 	assign KeyStreamDepletedEdge = KeyStreamDepletedDFF1_out ^ KeyStreamDepletedDFF2_out; //used to send to keyframeLFSR
 	DFFE KeyStreamDepletedDFF1(.d(KeyStreamDepleted),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF1_out),.ena(1'b1));
 	DFFE KeyStreamDepletedDFF2(.d(KeyStreamDepletedDFF1_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF2_out),.ena(1'b1));
+	DFFE KeyStreamDepletedDFF3(.d(KeyStreamDepletedDFF2_out),.clrn(~reset),.prn(1'b1),.clk(clk),.q(KeyStreamDepletedDFF3_out),.ena(1'b1));
+
 
 	/**
 		__     ___  ____
@@ -91,7 +93,7 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 	 We enable this for display of input key and data, which is when @startKeyStreamGen is 0. We also enable this when we want to output ciphertext, which is when KeyStreamDepleted & startKeyStreamGenDFF2_out.
 	**/
 	wire enterToKeyNotDataEdge, message_to_lcd_done;
-	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input & ~startKeyStreamGenDFF2_out) | (startKeyStreamGenDFF2_out & KeyStreamDepleted & ~message_to_lcd_done), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
+	lcd mylcd(clk, (reset | enterToKeyNotDataEdge | startKeyStreamGenEdge ), (ps2_key_pressed & accept_ps2_input & ~startKeyStreamGenDFF2_out) | (startKeyStreamGenDFF2_out & KeyStreamDepletedDFF3_out & ~message_to_lcd_done), data_to_lcd, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
 
 	my_tri #(8) data_to_lcd_tri1(asciiout, ~startKeyStreamGen, data_to_lcd);
 	my_tri #(8) data_to_lcd_tri2(ascii_xored, startKeyStreamGen, data_to_lcd);
@@ -169,14 +171,15 @@ module a51(clk,reset,enterToKeyNotData, startKeyStreamGen, ps2_clock, ps2_data, 
 
 	wire[127:0] a51_bitstream_aggregated, xored_out;
 	//	module LFSR(clk,in,out,write_enable,clrn,prn);
-	LFSR #(128) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepleted,{128{~reset}},{128{1'b1}});
-	yt61_reg #(128) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({128{1'b1}}) , .reg_clrn({128{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedEdge), .clk(clk));
+	assign a51_bitstream_aggregated = {128{1'b1}}; //DEBUG
+	//LFSR #(128) a51_bitstream(clk,a51out,a51_bitstream_aggregated,KeyStreamReady&~KeyStreamDepletedDFF2_out,{128{~reset}},{128{1'b1}});
+	yt61_reg #(128) xoredoutput(.reg_d(a51_bitstream_aggregated ^ datastore_out), .reg_prn({128{1'b1}}) , .reg_clrn({128{~reset}}), .reg_f(xored_out), .write_enable(KeyStreamDepletedDFF2_out), .clk(clk));
 
 	// we need to be able to read out 128 bit xord output 4 bits at a time using an up counter.
 	wire [7:0] up_counter_out;
 	assign message_to_lcd_done = &(up_counter_out[5:0] ~^ 6'd32); // TODO
-	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepleted & ~message_to_lcd_done), .clk(clk), .reset(reset));
-	giantMux myGiantMux(.in(datastore_out),.index(up_counter_out[4:0]),.out(final_xor_output));
+	up_counter myGiantMuxUpCounter(.out(up_counter_out), .enable(KeyStreamDepletedDFF3_out & ~message_to_lcd_done), .clk(clk), .reset(reset));
+	giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 	// print QWER
 	// giantMux myGiantMux(.in(xored_out),.index(up_counter_out[4:0]),.out(final_xor_output));
 
