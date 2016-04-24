@@ -1,4 +1,151 @@
-E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v
+E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module keyframe_regtb
+
+Top level modules:
+	keyframe_regtb
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module a51
+-- Compiling module a51_keygen
+-- Compiling module LFSR
+-- Compiling module majority3
+
+Top level modules:
+	a51
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/yt61_hw5.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/yt61_hw5.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module yt61_hw5
+-- Compiling module processor
+-- Compiling module yt61_hw4
+-- Compiling module my_tri
+-- Compiling module my_decoder
+-- Compiling module yt61_reg
+-- Compiling module up_counter
+-- Compiling module yt61_alu
+-- Compiling module sll_barrel_shifter
+-- Compiling module sra_barrel_shifter
+-- Compiling module inverse_thermometer_decoder
+-- Compiling module Cla8
+-- Compiling module Adder2
+-- Compiling module Adder32
+-- Compiling module Adder16
+-- Compiling module regfile
+-- Compiling module branchPredictor
+-- Compiling module reservationUnit
+
+Top level modules:
+	yt61_hw5
+	reservationUnit
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/ps2lcdinterface.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/ps2lcdinterface.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module ps2lcdinterface
+
+Top level modules:
+	ps2lcdinterface
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/scantoascii.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/scantoascii.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module scantoascii
+
+Top level modules:
+	scantoascii
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module datastore_reg
+
+Top level modules:
+	datastore_reg
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Interface.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Interface.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module PS2_Interface
+
+Top level modules:
+	PS2_Interface
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/scantohex.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/scantohex.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module scantohex
+
+Top level modules:
+	scantohex
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/giantMux.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module giantMux
+
+Top level modules:
+	giantMux
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Command_Out.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Command_Out.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module Altera_UP_PS2_Command_Out
+
+Top level modules:
+	Altera_UP_PS2_Command_Out
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Processor_Testbench.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Processor_Testbench.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module Processor_Testbench
+
+Top level modules:
+	Processor_Testbench
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51counter.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51counter.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module a51counter
+
+Top level modules:
+	a51counter
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module PS2_Controller
+
+Top level modules:
+	PS2_Controller
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/imem.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/imem.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module imem
+
+Top level modules:
+	imem
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Data_In.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Data_In.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module Altera_UP_PS2_Data_In
+
+Top level modules:
+	Altera_UP_PS2_Data_In
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/hextoascii.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/hextoascii.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module hextoascii
+
+Top level modules:
+	hextoascii
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Hexadecimal_To_Seven_Segment.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Hexadecimal_To_Seven_Segment.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module Hexadecimal_To_Seven_Segment
+
+Top level modules:
+	Hexadecimal_To_Seven_Segment
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module keyframe_reg
+
+Top level modules:
+	keyframe_reg
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/up_countertb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module up_countertb
 
@@ -12,34 +159,55 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	datastore_regtb
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/dmem.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/dmem.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module keyframe_regtb
+-- Compiling module dmem
 
 Top level modules:
-	keyframe_regtb
+	dmem
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51.v {0 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/giantMuxtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/giantMuxtb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module giantMuxtb
+
+Top level modules:
+	giantMuxtb
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v {0 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module a51_tb
+** Error: (vlog-13069) E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(6): near "wire": syntax error, unexpected wire, expecting ';' or ','.
+
 -- Compiling module a51
-** Error (suppressible): E:/Documents/SPRING2016/ECE350/FinalProject/a51.v(74): (vlog-2388) 'testout' already declared in this scope (a51).
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: clock.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: reset.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: enterToKeyNotData.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: startKeyStreamGen.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'ps2_clock'.
 
--- Compiling module a51_keygen
--- Compiling module LFSR
--- Compiling module majority3
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: ps2_clock.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'ps2_data'.
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/datastore_reg.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module datastore_reg
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: ps2_data.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_rw'.
 
-Top level modules:
-	datastore_reg
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_rw.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_en'.
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_reg.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module keyframe_reg
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_en.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_rs'.
 
-Top level modules:
-	keyframe_reg
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_rs.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_on'.
 
-} {} {}}
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_on.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_blon'.
+
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_blon.
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): (vlog-2730) Undefined variable: 'lcd_data'.
+
+** Error: E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(11): Identifier must be declared with a port mode: lcd_data.
+** Error: (vlog-13069) E:/Documents/SPRING2016/ECE350/FinalProject/a51_tb.v(27): near "EOF": syntax error, unexpected end of source code.
+
+
+} {4.0 5.0 7.0 12.0 13.0 15.0 16.0 18.0 19.0 21.0 22.0 24.0 25.0 27.0 28.0 30.0 31.0 33.0 34.0 36.0} {}}

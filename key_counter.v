@@ -1,5 +1,5 @@
-module key_counter (clock, reset, index, enterToKey, keyPress);
-  input clock, reset, enterToKey, keyPress;
+module key_counter (clock, reset, index, enterToKey, keyPress, backspace);
+  input clock, reset, enterToKey, keyPress, backspace;
   output [3:0] index;
   reg [3:0] tmp;
 
@@ -8,9 +8,13 @@ module key_counter (clock, reset, index, enterToKey, keyPress);
 			tmp <= 4'd0;
       end else begin
 			if (enterToKey) begin
-				tmp <= tmp + 4'd1;
+				if(backspace) begin
+					tmp <= tmp - 4'd1;
+				end else begin
+				   tmp <= tmp + 4'd1;
+				end
 			end
-		end
+		end		
   end
   assign index = tmp;
 endmodule

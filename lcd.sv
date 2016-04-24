@@ -31,6 +31,8 @@ module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _
 	reg lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
 	reg [7:0] lcd_data;
 
+
+
 	typedef reg [7:0] line_type [0:15];
 	line_type line1, line2;
 

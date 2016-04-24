@@ -53,36 +53,29 @@ module yt61_hw5(inclock, resetn, ps2_clock, ps2_data, a51_enterToKeyNotData, a51
 
 	assign LED13 = a51_done;
 
-	// your processor
-	// processor myprocessor(clock, ~resetn, ps2_key_pressed, ps2_out, lcd_write_en, lcd_write_data, debug_word, debug_addr, a51_enable_from_processor, a51_done, a51_reset);
+	processor myprocessor(clock, ~resetn, ps2_key_pressed, ps2_out, lcd_write_en, lcd_write_data, debug_word, debug_addr, a51_enable_from_processor, a51_done, a51_reset);
 
 
 	/**
-	 ____  ____  ____
-	(  _ \/ ___)(___ \
-	 ) __/\___ \ / __/
-	(__)  (____/(____)
-
+	__      _     __
+ (  )    / )   /  \
+  )(    / /   (  O )
+ (__)  (_/     \__/
 	**/
 
 	PS2_Interface myps2(clock, resetn, ps2_clock, ps2_data, ps2_key_data, ps2_key_pressed, ps2_out);
 
-	// lcd controller
 	lcd mylcd(clock, ~resetn | a51_lcd_reset, lcd_write_en | a51_lcd_enable, a51_lcd_data, lcd_data, lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon);
 
-	/***
-	_  _  ____  _  _    ____  __  ____  ____  __     __   _  _
- / )( \(  __)( \/ )  (    \(  )/ ___)(  _ \(  )   / _\ ( \/ )
- ) __ ( ) _)  )  (    ) D ( )( \___ \ ) __// (_/\/    \ )  /
- \_)(_/(____)(_/\_)  (____/(__)(____/(__)  \____/\_/\_/(__/
-	***/
-
-	// Display key and message character counts
 	Hexadecimal_To_Seven_Segment counter(a51_keyindex,sevensegout3);
 	Hexadecimal_To_Seven_Segment counter2(a51_dataindex[3:0],sevensegout2);
 	Hexadecimal_To_Seven_Segment counter3({{3'b0,a51_dataindex[4]}},sevensegout1);
 
 endmodule
+
+// -----------------------------
+// ---- your processor here ----
+// -----------------------------
 
 module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, debug_data, debug_addr, a51_en, a51_done, a51_reset);
 
@@ -95,13 +88,11 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	output [11:0] debug_addr;
 	output a51_en, a51_reset;
 
-	// -----------------------------
-	// ---- your processor here ----
-	// -----------------------------
 
 	wire[31:0] STATUS_in,STATUS_out;
-	wire setx, statusgtz; // for bex setx
-	yt61_reg STATUS(.reg_d(STATUS_in),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(STATUS_out),.write_enable(setx|multdiv_exception),.clk(clock));
+	wire setx, statusgtz, multdiv_exception; // for bex setx
+	yt61_reg STATUS(.reg_d(STATUS_in),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),
+									.reg_f(STATUS_out),.write_enable(setx|multdiv_exception),.clk(clock));
 	assign statusgtz = (~STATUS_out[31]) & (|STATUS_out[30:0]); // gtz if msb is 0 and other bits contain at least one 1
 
 	// --------
@@ -210,6 +201,16 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	my_tri nostallmuxDXPC(FD_PC_STORE_out, ~(stall | flush), DX_PC_in);
 	my_tri stallmuxDXPC(32'b0, (stall | flush), DX_PC_in); //Write nop into D/X.IR
 
+	/***
+
+	A5/1 Launching and Stalling
+
+	When opcode 11111 (a51start) is in decode stage and ~a51_done we stall. a51_en is asserted as long as a51start is in decode stage. a51 unit will run for X cycles. when a51 unit is done it will assert a51_done. Unit will unstall and a51_en will be false.
+
+	***/
+	wire A51Start = &(FD_IR_out[31:27] ^~ 5'b11111); // CUSTOM INSTRUCTION
+	assign a51_en = A51Start;
+
 	// DX Pipeline Reg
 	yt61_reg DX_INSTR_STORE(.reg_d(DX_IR_in),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(DX_IR_out),.write_enable(1'b1),.clk(clock));
 	yt61_reg DX_REGA_STORE(.reg_d(regfile_RegA_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(DX_REGA_STORE_out),.write_enable(1'b1),.clk(clock));
@@ -233,6 +234,7 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	//control opcode for the main ALU
 	wire[4:0] mainALU_opcode_in;
 	wire RType = &(DX_IR_out[31:27] ^~ 5'b00000);
+
 	my_tri #(5) aluopcodemux1(DX_IR_out[6:2], RType, mainALU_opcode_in); // RType = 1, regB used, use ALUOp field
 	my_tri #(5) aluopcodemux2(5'b00000, ~(RType | bne | blt), mainALU_opcode_in); // use add opcode
 	my_tri #(5) aluopcodemux3(5'b00001, bne | blt, mainALU_opcode_in); // use sub opcode for branches so that ALU output for NE and LT are relevant.
@@ -307,39 +309,44 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	// -- W --
 	//---------
 	//ctrl for lw opcode (01000)
+	wire multdiv_ready_latch_out;
+	wire[31:0] multdiv_RESULT_STORE_out;
 	wire MemtoReg = ~MW_IR_out[31] & MW_IR_out[30] & ~MW_IR_out[29] & ~MW_IR_out[28] & ~MW_IR_out[27];
 	my_tri regwrite_mux1(MW_mainALU_STORE_out, ~(MemtoReg|jalInWB), regfile_RegWrite_in); // for r type write to rd
 	my_tri regwrite_mux2(MW_dmem_STORE_out, MemtoReg, regfile_RegWrite_in); //for lw
 	my_tri regwrite_mux3(MW_PC_STORE_out, jalInWB, regfile_RegWrite_in); // for storing pc+1 for JAL
-	my_tri regwrite_mux4(multdiv_RESULT_STORE_out, multdiv_resultrdy, regfile_RegWrite_in);
+	my_tri regwrite_mux4(multdiv_RESULT_STORE_out, multdiv_ready_latch_out, regfile_RegWrite_in); //for storing multdiv result
+
 	//------
 	// Multiplier / Divider
 	//------
-
 	wire ctrlMult = RType & &(DX_IR_out[6:2] ^~ 5'b00110);
 	wire ctrlDiv = RType & &(DX_IR_out[6:2] ^~ 5'b00111);
-	wire[31:0] multdiv_out, multdiv_IR_out, multdiv_RESULT_STORE_out;
-	wire multdiv_exception, multdiv_inputrdy, multdiv_resultrdy;
+	wire[31:0] multdiv_out, multdiv_IR_out;
+	wire multdiv_inputrdy, multdiv_resultrdy;
 	yt61_hw4 myMultDiv(.data_operandA(mainALU_operandA_in), .data_operandB(mainALU_operandB_in), .ctrl_MULT(ctrlMult), .ctrl_DIV(ctrlDiv), .clock(clock), .data_result(multdiv_out), .data_exception(multdiv_exception), .data_inputRDY(multdiv_inputrdy), .data_resultRDY(multdiv_resultrdy));
 	yt61_reg multdiv_INSTR_STORE(.reg_d(DX_IR_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_IR_out),.write_enable(ctrlMult|ctrl_DIV),.clk(clock));
 	yt61_reg multdiv_RESULT_STORE(.reg_d(multdiv_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_RESULT_STORE_out),.write_enable(multdiv_resultrdy),.clk(clock));
 	wire multdiv_active;
+	wire stall2;
+	DFFE multdiv_ready_latch(.d(multdiv_resultrdy),.clk(clock),.clrn(~reset),.prn(1'b1),.ena(1'b1),.q(multdiv_ready_latch_out));
 	DFFE multdivactive (.d(stall2), .clk(clock), .clrn(~reset), .prn(1'b1), .ena(stall2|multdiv_resultrdy), .q(multdiv_active));
 
-	//-------
-	// HAZARD detection
-	//-------
+	/***
+		____  ____  __   __    __      __     __    ___  __  ___
+	 / ___)(_  _)/ _\ (  )  (  )    (  )   /  \  / __)(  )/ __)
+	 \___ \  )( /    \/ (_/\/ (_/\  / (_/\(  O )( (_ \ )(( (__
+	 (____/ (__)\_/\_/\____/\____/  \____/ \__/  \___/(__)\___)
+	***/
+
 	wire rs2matters = (&(FD_IR_out[31:27] ^~ 5'b00000)) & ~(&(FD_IR_out[31:28] ^~ 4'b0010));
 	wire stall1 = &(DX_IR_out[31:27] ^~ 5'b01000) & ((&(FD_IR_out[21:17] ^~ DX_IR_out[26:22])) | ((&(FD_IR_out[16:12] ^~ DX_IR_out[26:22])) & rs2matters));
-	wire stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
+	assign stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
 	wire stall3= multdiv_active & ~multdiv_resultrdy;
-	assign stall = stall1 | stall2 | stall3;
+	assign stall = stall1 | stall2 | stall3 | (A51Start & ~a51_done);
 
 	//where RS2matters means the insn is R type and not shift
 	//stall when DX is load & ((FD.RS1 == DX.RD) || ((FD.RS2 == DX.RD) & RS2matters))
-
-
-
 
 	// end of my processor
 

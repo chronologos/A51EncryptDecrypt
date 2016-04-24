@@ -42,6 +42,7 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	scantoascii Converter(ps2_key_data,asciiout); //goes to LCD from input
 	scantohex Converter2(ps2_key_data,hexout); // goes to keyreg and datareg
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
+	wire backspace_detected = &(asciiout ^~8'h3C);
 	wire break_code_detected = &(asciiout ^~ 8'h21);
 	wire accept_ps2_input;
 	//JKFFE to only detect keypress after breakcode  We only want to use value of ps2_key_data every three
@@ -90,8 +91,8 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	/*** Data and Key counters for storing into datastore_reg and keyframe_reg ***/
 	wire [3:0] keyindex;
 	wire [4:0] dataindex;
-	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
-	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input));
+	key_counter mykeycounter (.clock(clk), .reset(reset), .index(keyindex), .enterToKey(enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input), .backspace(backspace_detected));
+	data_counter mydatacounter (.clock(clk), .reset(reset), .index(dataindex), .enterToData(~enterToKeyNotData & ~startKeyStreamGen), .keyPress(ps2_key_pressed & accept_ps2_input), .backspace(backspace_detected));
 
 
 	// Edge detection for when we switch from entering data to entering key
