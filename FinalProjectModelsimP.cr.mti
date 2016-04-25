@@ -1,4 +1,11 @@
-E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
+E:/Documents/SPRING2016/ECE350/FinalProject/lcd.sv {1 {vlog -work work -sv -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/lcd.sv
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module lcd
+
+Top level modules:
+	lcd
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/keyframe_regtb.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module keyframe_regtb
 
@@ -39,6 +46,13 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	yt61_hw5
 	reservationUnit
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/data_counter.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/data_counter.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module data_counter
+
+Top level modules:
+	data_counter
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/ps2lcdinterface.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/ps2lcdinterface.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
@@ -89,7 +103,7 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	Altera_UP_PS2_Command_Out
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Processor_Testbench.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Processor_Testbench.v
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Processor_Testbench.v {1 {vlog -work work -stats=none {E:\Documents\SPRING2016\ECE350\FinalProject\Processor_Testbench.v}
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module Processor_Testbench
 
@@ -103,19 +117,26 @@ Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 Top level modules:
 	a51counter
 
-} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v
-Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
--- Compiling module PS2_Controller
-
-Top level modules:
-	PS2_Controller
-
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/imem.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/imem.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
 -- Compiling module imem
 
 Top level modules:
 	imem
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/key_counter.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/key_counter.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module key_counter
+
+Top level modules:
+	key_counter
+
+} {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/PS2_Controller.v
+Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015
+-- Compiling module PS2_Controller
+
+Top level modules:
+	PS2_Controller
 
 } {} {}} E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Data_In.v {1 {vlog -work work -stats=none E:/Documents/SPRING2016/ECE350/FinalProject/Altera_UP_PS2_Data_In.v
 Model Technology ModelSim ALTERA vlog 10.4b Compiler 2015.05 May 27 2015

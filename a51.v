@@ -44,6 +44,8 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	hextoascii Converter3(final_xor_output, ascii_xored); // goes to LCD from output
 	wire backspace_detected = &(asciiout ^~8'h3C);
 	wire break_code_detected = &(asciiout ^~ 8'h21);
+	assign error = &(asciiout^~ 8'h78);
+
 	wire accept_ps2_input;
 	//JKFFE to only detect keypress after breakcode  We only want to use value of ps2_key_data every three
 	// key presses because a single press of a key sends both a 4 bit make and a 16 bit break code.
@@ -171,6 +173,7 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	assign LEDenterToKeyNotData = enterToKeyNotDataDFF2_out;
 	assign LEDstartKeyStreamGen = startKeyStreamGenDFF2_out;
 	assign LEDKeyStreamDepleted = KeyStreamDepleted;
+	assign LEDmessage_to_lcd_done = message_to_lcd_done;
 	assign keyindex_out = keyindex;
 	assign dataindex_out = dataindex;
 	assign data_to_lcd_out = data_to_lcd;

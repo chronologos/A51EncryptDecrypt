@@ -186,12 +186,16 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	my_tri #(5) regB_is_rt(FD_IR_out[16:12], ~regBisRD,regB_choose);
 
 	wire jalInWB = &(MW_IR_out[31:27] ^~ 5'b00011); // jal
-	wire[31:0] writeReg_choose; // write to RD or $R31
-	my_tri writeReg_is_normal({27'b0,MW_IR_out[26:22]},~jalInWB,writeReg_choose); // write to normal RD
-	my_tri writeReg_is_r31({27'b0,5'b11111},jalInWB,writeReg_choose); // write to $R31
+	wire[4:0] writeReg_choose; // write to RD or $R31
+	wire[31:0] multdiv_IR_out;
+	wire multdiv_ready_latch_out;
+	my_tri #(5) writeReg_is_normal(MW_IR_out[26:22],~(jalInWB|multdiv_ready_latch_out),writeReg_choose); // write to normal RD
+	my_tri #(5) writeReg_is_r31(5'b11111,jalInWB,writeReg_choose); // write to $R31
+	my_tri #(5) writeReg_is_multdiv(multdiv_IR_out[26:22],multdiv_ready_latch_out,writeReg_choose); // multdiv returned result, use instruction stored in multdiv IR latch
+
 	wire[31:0] regfiledebug0, regfiledebug1, regfiledebug2, regfiledebug3, regfiledebug4, regfiledebug5, regfiledebug6, regfiledebug7, regfiledebug31;
 
-	regfile my_regfile(.clock(~clock), .ctrl_writeEnable(RegWrite), .ctrl_reset(reset), .ctrl_writeReg(writeReg_choose[4:0]), .ctrl_readRegA(FD_IR_out[21:17]), .ctrl_readRegB(regB_choose), .data_writeReg(regfile_RegWrite_in), .data_readRegA(regfile_RegA_out), .data_readRegB(regfile_RegB_out),.data_out0(regfiledebug0),.data_out1(regfiledebug1),.data_out2(regfiledebug2),.data_out3(regfiledebug3),.data_out4(regfiledebug4),.data_out5(regfiledebug5),.data_out6(regfiledebug6), .data_out7(regfiledebug7),.data_out31(regfiledebug31));
+	regfile my_regfile(.clock(~clock), .ctrl_writeEnable(RegWrite), .ctrl_reset(reset), .ctrl_writeReg(writeReg_choose), .ctrl_readRegA(FD_IR_out[21:17]), .ctrl_readRegB(regB_choose), .data_writeReg(regfile_RegWrite_in), .data_readRegA(regfile_RegA_out), .data_readRegB(regfile_RegB_out),.data_out0(regfiledebug0),.data_out1(regfiledebug1),.data_out2(regfiledebug2),.data_out3(regfiledebug3),.data_out4(regfiledebug4),.data_out5(regfiledebug5),.data_out6(regfiledebug6), .data_out7(regfiledebug7),.data_out31(regfiledebug31));
 
 	// stall and branch flush logic: noop mux
 	wire[31:0] DX_IR_in, DX_PC_in;
@@ -277,7 +281,9 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 
 	// Pipeline Reg
 	wire[31:0] XM_REGB_STORE_out, XM_PC_STORE_out;
-	yt61_reg XM_INSTR_STORE(.reg_d(DX_IR_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(XM_IR_out),.write_enable(1'b1),.clk(clock));
+	wire ctrlMult, ctrlDiv;
+	// if instruction in X stage is mult or div we make the replace the propagating instruction with a noop
+	yt61_reg XM_INSTR_STORE(.reg_d((ctrlMult|ctrlDiv)?{32{1'b0}}:DX_IR_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(XM_IR_out),.write_enable(1'b1),.clk(clock));
 	yt61_reg XM_REGB_STORE(.reg_d(opB_bypass_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(XM_REGB_STORE_out),.write_enable(1'b1),.clk(clock));
 	yt61_reg XM_mainALU_STORE(.reg_d(mainALU_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(XM_mainALU_STORE_out),.write_enable(1'b1),.clk(clock));
 	yt61_reg XM_PC_STORE(.reg_d(DX_PC_STORE_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(XM_PC_STORE_out),.write_enable(1'b1),.clk(clock));
@@ -309,10 +315,9 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	// -- W --
 	//---------
 	//ctrl for lw opcode (01000)
-	wire multdiv_ready_latch_out;
 	wire[31:0] multdiv_RESULT_STORE_out;
 	wire MemtoReg = ~MW_IR_out[31] & MW_IR_out[30] & ~MW_IR_out[29] & ~MW_IR_out[28] & ~MW_IR_out[27];
-	my_tri regwrite_mux1(MW_mainALU_STORE_out, ~(MemtoReg|jalInWB), regfile_RegWrite_in); // for r type write to rd
+	my_tri regwrite_mux1(MW_mainALU_STORE_out, ~(MemtoReg|jalInWB|multdiv_ready_latch_out), regfile_RegWrite_in); // for r type write to rd
 	my_tri regwrite_mux2(MW_dmem_STORE_out, MemtoReg, regfile_RegWrite_in); //for lw
 	my_tri regwrite_mux3(MW_PC_STORE_out, jalInWB, regfile_RegWrite_in); // for storing pc+1 for JAL
 	my_tri regwrite_mux4(multdiv_RESULT_STORE_out, multdiv_ready_latch_out, regfile_RegWrite_in); //for storing multdiv result
@@ -320,17 +325,16 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 	//------
 	// Multiplier / Divider
 	//------
-	wire ctrlMult = RType & &(DX_IR_out[6:2] ^~ 5'b00110);
-	wire ctrlDiv = RType & &(DX_IR_out[6:2] ^~ 5'b00111);
-	wire[31:0] multdiv_out, multdiv_IR_out;
+	assign ctrlMult = RType & &(DX_IR_out[6:2] ^~ 5'b00110);
+	assign ctrlDiv = RType & &(DX_IR_out[6:2] ^~ 5'b00111);
+	wire[31:0] multdiv_out;
 	wire multdiv_inputrdy, multdiv_resultrdy;
 	yt61_hw4 myMultDiv(.data_operandA(mainALU_operandA_in), .data_operandB(mainALU_operandB_in), .ctrl_MULT(ctrlMult), .ctrl_DIV(ctrlDiv), .clock(clock), .data_result(multdiv_out), .data_exception(multdiv_exception), .data_inputRDY(multdiv_inputrdy), .data_resultRDY(multdiv_resultrdy));
 	yt61_reg multdiv_INSTR_STORE(.reg_d(DX_IR_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_IR_out),.write_enable(ctrlMult|ctrl_DIV),.clk(clock));
 	yt61_reg multdiv_RESULT_STORE(.reg_d(multdiv_out),.reg_prn({32{1'b1}}),.reg_clrn({32{~reset}}),.reg_f(multdiv_RESULT_STORE_out),.write_enable(multdiv_resultrdy),.clk(clock));
 	wire multdiv_active;
-	wire stall2;
 	DFFE multdiv_ready_latch(.d(multdiv_resultrdy),.clk(clock),.clrn(~reset),.prn(1'b1),.ena(1'b1),.q(multdiv_ready_latch_out));
-	DFFE multdivactive (.d(stall2), .clk(clock), .clrn(~reset), .prn(1'b1), .ena(stall2|multdiv_resultrdy), .q(multdiv_active));
+	TFFE multdivactive (.t(ctrlMult | ctrlDiv | multdiv_resultrdy), .clk(clock), .clrn(~reset), .prn(1'b1), .ena(1'b1), .q(multdiv_active));
 
 	/***
 		____  ____  __   __    __      __     __    ___  __  ___
@@ -341,9 +345,9 @@ module processor(clock, reset, ps2_key_pressed, ps2_out, lcd_write, lcd_data, de
 
 	wire rs2matters = (&(FD_IR_out[31:27] ^~ 5'b00000)) & ~(&(FD_IR_out[31:28] ^~ 4'b0010));
 	wire stall1 = &(DX_IR_out[31:27] ^~ 5'b01000) & ((&(FD_IR_out[21:17] ^~ DX_IR_out[26:22])) | ((&(FD_IR_out[16:12] ^~ DX_IR_out[26:22])) & rs2matters));
-	assign stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
+	// assign stall2 = (ctrlMult | ctrlDiv) & ~multdiv_inputrdy; // stall if mult/div operation at DX but multdiv unit not ready to operate.
 	wire stall3= multdiv_active & ~multdiv_resultrdy;
-	assign stall = stall1 | stall2 | stall3 | (A51Start & ~a51_done);
+	assign stall = stall1 | stall3 | (A51Start & ~a51_done);
 
 	//where RS2matters means the insn is R type and not shift
 	//stall when DX is load & ((FD.RS1 == DX.RD) || ((FD.RS2 == DX.RD) & RS2matters))

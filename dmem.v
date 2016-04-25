@@ -90,7 +90,7 @@ module dmem (
 `ifdef NO_PLI
 		altsyncram_component.init_file = "dmem.rif"
 `else
-		altsyncram_component.init_file = "loopTestdmem.hex"
+		altsyncram_component.init_file = "loopTestnomultdmem.hex"
 `endif
 ,
 		altsyncram_component.intended_device_family = "Cyclone IV E",
