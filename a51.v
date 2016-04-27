@@ -15,7 +15,7 @@
 	a51 myA51(.clk(), .reset(), .enable(), .enterToKeyNotData(), .startKeyStreamGen(), .ps2_key_pressed(), .ps2_key_data(), .LEDerror(), .LEDenterToKeyNotData(), .LEDstartKeyStreamGen(), .LEDKeyStreamDepleted(), .LEDmessage_to_lcd_done(), .keyindex_out(), .dataindex_out(), .data_to_lcd_out(), .lcd_reset(), .lcd_enable());
 ***/
 
-module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pressed, ps2_key_data, LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, keyindex_out, dataindex_out, data_to_lcd_out, lcd_reset, lcd_enable);
+module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pressed, ps2_key_data, LEDerror, LEDenterToKeyNotData, LEDstartKeyStreamGen, LEDKeyStreamDepleted, LEDmessage_to_lcd_done, keyindex_out, dataindex_out, data_to_lcd_out, lcd_reset, lcd_enable, keystream_to_processor);
 
 	input clk, reset, enable; //ASSIGN reset to some button.
 	input enterToKeyNotData; // Another flip switch
@@ -29,6 +29,7 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	output[7:0] data_to_lcd_out;
 	output lcd_reset; // a51 unit needs to be able to reset LCD module.
 	output lcd_enable;
+	output [127:0] keystream_to_processor;
 
 	wire error;
 	wire[7:0] data_to_lcd;
@@ -179,6 +180,7 @@ module a51(clk, reset, enable, enterToKeyNotData, startKeyStreamGen, ps2_key_pre
 	assign data_to_lcd_out = data_to_lcd;
 	assign lcd_reset = internal_lcd_reset;
 	assign lcd_enable = internal_lcd_enable;
+	assign keystream_to_processor = a51_bitstream_aggregated;
 
 endmodule
 
